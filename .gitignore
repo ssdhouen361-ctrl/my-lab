@@ -1,0 +1,16 @@
+# Secret / Environment variables (トークンなどの秘密情報)
+.env
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# macOS
+.DS_Store
+
+# Gemini CLI / GitHub Actions
+.gemini/
+gha-creds-*.json

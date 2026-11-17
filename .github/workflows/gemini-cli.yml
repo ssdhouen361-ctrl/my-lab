@@ -1,0 +1,112 @@
+name: "Gemini CLI Agent"
+
+# いつ起動するか（トリガー設定）
+# 1. 新しいIssueが作られたとき (issues: opened)
+# 2. IssueやPull Requestにコメントが書かれたとき (issue_comment: created)
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+
+jobs:
+  gemini-cli:
+    runs-on: ubuntu-latest
+
+    # 【起動条件フィルター】
+    # 以下のすべてを満たすときだけ起動します：
+    # 1. Bot自身の書き込みではないこと（無限ループ防止）
+    # 2. 書き込んだ人がリポジトリのオーナーまたは協力者であること（第三者による不正利用防止）
+    # 3. Issue本文またはコメント本文に「@gemini-cli」が含まれていること
+    if: >-
+      github.event.sender.type == 'User' &&
+      (
+        (
+          github.event_name == 'issues' &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.issue.author_association) &&
+          contains(github.event.issue.body, '@gemini-cli')
+        ) ||
+        (
+          github.event_name == 'issue_comment' &&
+          contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) &&
+          contains(github.event.comment.body, '@gemini-cli')
+        )
+      )
+
+    # Geminiがリポジトリのファイルを書き換えたり、Issueに返信したりするための権限設定
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      # Step 1: リポジトリのファイルをクラウドの作業場にダウンロード（チェックアウト）する
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Step 2: Gitのコミット作成者情報（Geminiがファイルを保存するときの名義）を設定する
+      - name: Configure Git user
+        run: |
+          git config --global user.name "gemini-cli[bot]"
+          git config --global user.email "gemini-cli[bot]@users.noreply.github.com"
+
+      # Step 3: スマホ画面で「動いていること」がすぐ分かるように、受付完了コメントを投稿する
+      - name: Acknowledge request
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "🤖 リクエストを受け付けました！Gemini CLI が作業を開始します。完了まで1〜2分ほどお待ちください..."
+
+      # Step 4: Gemini CLI を起動して指示を実行する
+      - name: Run Gemini CLI
+        uses: google-github-actions/run-gemini-cli@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          REPOSITORY: ${{ github.repository }}
+        with:
+          gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
+          # 自動実行環境でシェルコマンド（ghコマンドやgitコマンド）を使えるように許可
+          settings: |
+            {
+              "coreTools": [
+                "run_shell_command",
+                "read_file",
+                "write_file",
+                "edit_file",
+                "glob",
+                "grep"
+              ],
+              "tools": {
+                "allowed": [
+                  "run_shell_command"
+                ]
+              }
+            }
+          prompt: |
+            あなたはこのリポジトリ（${{ env.REPOSITORY }}）の専属エンジニア兼リポジトリ管理者（Gemini CLIエージェント）です。
+            リポジトリ内の `AGENTS.md` のルールに従い、常に丁寧でわかりやすい日本語で対応してください。
+
+            ## 今回の状況
+            - 対象Issue番号: #${{ env.ISSUE_NUMBER }}
+            - Issueタイトル: ${{ env.ISSUE_TITLE }}
+            - Issue本文:
+            ${{ env.ISSUE_BODY }}
+
+            - 最新のコメント（ここが空の場合はIssue本文が今回の指示です）:
+            ${{ env.COMMENT_BODY }}
+
+            ## あなたへの指示
+            1. 上記の「最新のコメント」（空なら「Issue本文」）に書かれた `@gemini-cli` 宛ての依頼内容を確認してください。
+            2. ファイルの作成・編集・整理が求められている場合は、実際にファイルを作成・編集し、`git add`、`git commit`、`git push origin HEAD:main` を実行してリポジトリに反映してください。
+            3. 作業が完了したら（または質問への回答がまとまったら）、必ず以下のコマンドを使って **Issue #${{ env.ISSUE_NUMBER }} に日本語で返信コメントを投稿** してください：
+               `gh issue comment ${{ env.ISSUE_NUMBER }} --repo ${{ env.REPOSITORY }} --body "<返信内容>"`
+               （※長文や改行を含む場合は、一時ファイルに書き出してから `gh issue comment ${{ env.ISSUE_NUMBER }} --repo ${{ env.REPOSITORY }} --body-file <一時ファイル>` を使うと安全です。一時ファイルはコミットしないでください。）
