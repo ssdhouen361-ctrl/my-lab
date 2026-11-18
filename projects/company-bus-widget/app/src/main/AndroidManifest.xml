@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 次のバス発車時刻ぴったりにウィジェットの表示を切り替えるための権限 -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_bus_launcher"
+        android:roundIcon="@drawable/ic_bus_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+
+        <!-- アプリ本体画面（時刻表一覧・ルート切替・カウントダウン確認） -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- ホーム画面ウィジェット（Galaxy Home Up 自由リサイズ対応） -->
+        <receiver
+            android:name=".BusWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.mylab.buswidget.ACTION_REFRESH" />
+                <action android:name="com.mylab.buswidget.ACTION_TOGGLE_ROUTE" />
+                <action android:name="com.mylab.buswidget.ACTION_AUTO_TICK" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/bus_widget_info" />
+        </receiver>
+
+    </application>
+
+</manifest>

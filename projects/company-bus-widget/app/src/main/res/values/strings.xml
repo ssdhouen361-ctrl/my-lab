@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">社バス案内 (GNFJ)</string>
+    <string name="widget_name">社バス カウントダウン</string>
+    <string name="widget_description">JR発・GNFJ発の社バス発車まで秒単位でカウントダウンします（Home Up 自由リサイズ対応）</string>
+</resources>
