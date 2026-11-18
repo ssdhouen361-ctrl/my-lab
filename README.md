@@ -16,5 +16,7 @@ AI支援による実験的開発やプログラミングの記録用リポジト
   Galaxy S26 Ultraのアラーム鳴動時にDiscord経由でMac miniのApple Musicを自動再生するシステム（稼働中）。
 - **[Discord連携 Mac mini AIエージェント](projects/discord-ai-agent/README.md)**  
   Discordの `#gemini-agent` チャンネルに指示を書くだけで、Mac mini上の Antigravity CLI (`agy`) が自律的に作業・GitHub反映・返信を行うシステム。
+- **[社バス カウントダウンウィジェット (GNFJ)](projects/company-bus-widget/README.md)**  
+  Yahoo!乗換案内風 × Galaxy「Home Up」対応の社バス発車カウントダウン Android ウィジェット（v1.0.0 完成・固定保管済み）。
 - **[スマホ連動 GitHub Issue AIエージェント](projects/github-issue-agent/README.md)** *(検証・保留)*  
   GitHub Issues に `@gemini-cli` と書き込むクラウド版ワークフロー（無料枠APIキーの1日20回制限により現在はDiscord版へ移行）。

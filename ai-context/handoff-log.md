@@ -55,19 +55,31 @@
 
 ---
 
-## 進行中プロジェクト: 社バス カウントダウンウィジェット (`company-bus-widget`)
+## 完了プロジェクト（v1.0.0）: 社バス カウントダウンウィジェット (`company-bus-widget`)
 
 - **設計・手順書:** [projects/company-bus-widget/README.md](../projects/company-bus-widget/README.md)
+- **固定保管版 APK（v1.0.0・読み取り専用保護）:** [projects/company-bus-widget/releases/company-bus-widget-v1.0.0.apk](../projects/company-bus-widget/releases/company-bus-widget-v1.0.0.apk)
+- **GitHub Releases 固定保管URL:** `https://github.com/ssdhouen361-ctrl/my-lab/releases/tag/bus-widget-v1.0.0`
 - **時刻表データ:** [projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/BusTimetable.kt](../projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/BusTimetable.kt)
 - **ウィジェット本体:** [projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/BusWidgetProvider.kt](../projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/BusWidgetProvider.kt)
+- **アプリ本体画面:** [projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/MainActivity.kt](../projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/MainActivity.kt)
 - **自動ビルド設定:** [.github/workflows/build-bus-widget.yml](../.github/workflows/build-bus-widget.yml)
 - **最終更新:** 2026-11-19
 
-### 実装済みの内容
-1. **時刻表画像からの全便データ化 (`1-1` 〜 `1-25`)**:
-   - デフォルトの「JR発 ➔ GNFJ（会社行）」に加え、ワンタップ切替で「GNFJ発 ➔ JR・京急（帰り）」「京急発 ➔ GNFJ」の3ルートに対応。
-2. **Yahoo!乗換案内風カウントダウン × Galaxy Home Up 対応**:
-   - Android 標準の `Chronometer` により省電力で秒単位カウントダウンを表示。
-   - 最小 1×1 マス（40dp）からの縦横自由リサイズに対応し、ウィジェットの高さに応じて「次発のみ」「次々発まで」「3本目まで」を自動出し分け。
-3. **GitHub Actions 自動 APK ビルド**:
-   - プッシュ時に自動で `company-bus-widget.apk` をビルドし、GitHub Releases (`bus-widget-latest`) に公開するワークフローを構築（Android SDK セットアップステップの非推奨パッケージエラーを解消済み）。
+### 実装・保管済みの内容（v1.0.0）
+1. **時刻表画像からの全便データ化 (`1-1` 〜 `1-25`) と 2×2 ウィジェット最適化**:
+   - デフォルトの「JR発 ➔ GNFJ（会社行）」と「GNFJ発 ➔ 駅（帰り）」をヘッダーの大きな `⇄ 切替` ボタンでワンタップ往復切替。
+   - 便番号（`1-1` 等）やバスアイコンを省き、2×2サイズでも「次発」「次々発」「3本目」の発着時刻が見切れないレイアウトに調整。
+2. **アプリ内の全体時刻表（5列テーブル）**:
+   - 元の時刻表画像と同じ5列（`GNFJ発 | 京急(降) | JR発 | 京急(乗) | GNFJ着`）の全便一覧表と次発ハイライト表示を実装。
+3. **v1.0.0 成果物の書き換え防止保管**:
+   - ローカル＆Gitリポジトリ内の `projects/company-bus-widget/releases/company-bus-widget-v1.0.0.apk` に読み取り専用（`chmod 444`）で保管。
+   - GitHub Releases にも上書きされない固定タグ `bus-widget-v1.0.0` としてリリースを作成済み。
+
+### 次回アップデート（v1.1.0）の課題・ダメ出し記録
+1. **ウィジェット内のフォント拡大:**
+   - ウィジェット内の余白にまだ余裕があるため、余白を詰めて発車時刻・カウントダウン・次々発/3本目のフォントサイズを全体的に大きくする。
+2. **アプリ内の時刻表の縦長解消＆カウントダウン表示のコンパクト化:**
+   - アプリを開いた際、上部のカウントダウン表示が大きすぎて時刻表全体が縦に長くなり見づらいため、上部カウントダウンをスリム化し、時刻表の行間も詰めて一画面での一覧性を高める。
+3. **Galaxy「モードとルーチン」での往復切替対応:**
+   - ルーチンから「往路（JR発）に切替」「復路（GNFJ発）に切替」「往復トグル切替」を直接実行できるよう、専用のショートカット／アクティビティ（Activity Alias / App Shortcuts）を追加する。

@@ -4,7 +4,10 @@ on:
   push:
     branches: [ main ]
     paths:
-      - 'projects/company-bus-widget/**'
+      - 'projects/company-bus-widget/app/**'
+      - 'projects/company-bus-widget/build.gradle.kts'
+      - 'projects/company-bus-widget/settings.gradle.kts'
+      - 'projects/company-bus-widget/gradle.properties'
       - '.github/workflows/build-bus-widget.yml'
   workflow_dispatch:
 
