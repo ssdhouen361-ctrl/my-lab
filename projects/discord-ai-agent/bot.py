@@ -174,6 +174,7 @@ async def run_agy_prompt(prompt: str, conversation_id: Optional[str]) -> tuple[b
         "--mode",
         AGY_MODE,
         "--sandbox",
+        "--dangerously-skip-permissions",
         "--print-timeout",
         f"{AGY_TIMEOUT_SECONDS}s",
     ]
@@ -213,9 +214,13 @@ async def run_agy_prompt(prompt: str, conversation_id: Optional[str]) -> tuple[b
         new_conv_id = parsed.get("conversation_id") or conversation_id
         status = parsed.get("status", "")
         response_text = (parsed.get("response") or "").strip()
+        denied = parsed.get("denied_actions") or []
         if status and status != "SUCCESS":
             return False, f"agy ステータス異常 ({status}): {response_text or stderr_text}", new_conv_id
-        return True, response_text or "（応答テキストが空でした）", new_conv_id
+        if not response_text:
+            detail = stderr_text or (f"拒否された操作: {denied}" if denied else "詳細不明")
+            return False, f"応答テキストが空でした。\n```\n{detail[:1000]}\n```", new_conv_id
+        return True, response_text, new_conv_id
 
     # JSON解析できない場合のフォールバック
     if stdout_text:
