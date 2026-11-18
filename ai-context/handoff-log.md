@@ -30,22 +30,28 @@
 
 ---
 
-## 進行中プロジェクト: Discord連携 Mac mini AIエージェント (`#gemini-agent`)
+## 完了・稼働中プロジェクト: Discord連携 Mac mini AIエージェント (`#gemini-agent`)
 
 - **設計・手順書:** [projects/discord-ai-agent/README.md](../projects/discord-ai-agent/README.md)
 - **プログラム本体:** [projects/discord-ai-agent/bot.py](../projects/discord-ai-agent/bot.py)
 - **常駐設定ファイル:** [projects/discord-ai-agent/com.mylab.discord-ai-agent.plist](../projects/discord-ai-agent/com.mylab.discord-ai-agent.plist)
-- **最終更新:** 2026-11-18
+- **最終更新:** 2026-11-19
 
 ### これまでの経緯と完了した作業
 1. **GitHub Actions 版（`projects/github-issue-agent/`）の検証結果**:
    - `.github/workflows/gemini-cli.yml` を構築して動作確認を行ったが、Google AI Studio 無料枠（`gemini-3.8-flash`）の1日20リクエスト制限および夜間混雑（503エラー）により、無料APIキーでの安定運用は困難と判明。
    - また Mac mini 上の旧 `gemini` CLI（`0.68.0`）も個人向けログイン（`oauth-personal`）が提供終了済みであることを確認。
-2. **Discord × Antigravity CLI (`agy`) 版への方針転換と実装**:
-   - Mac mini に公式後継の `agy` CLI（`/Users/sasadayuto/.local/bin/agy`）を導入し、`-p --output-format json --mode accept-edits --sandbox` での非対話実行が正常動作することを確認。
-   - `projects/discord-ai-agent/` に、`#gemini-agent` チャンネル（および配下スレッド）を監視して `agy` を呼び出し、変更があれば自動で `git commit & push` し、2000文字超えの返信も自動分割して返す Bot (`bot.py`) と `launchd` 設定を作成。
+2. **Discord × Antigravity CLI (`agy`) 版への方針転換と本稼働**:
+   - Mac mini に公式後継の `agy` CLI（`/Users/sasadayuto/.local/bin/agy`）を導入し、`-p --output-format json --mode accept-edits --sandbox --dangerously-skip-permissions` での非対話実行が正常動作することを確認。
+   - `projects/discord-ai-agent/` に Python 仮想環境（`.venv`）と `bot.py` を構築し、`~/Library/LaunchAgents/com.mylab.discord-ai-agent.plist` として `launchd` 常駐起動を完了。
+   - Discord 上に `#gemini-agent` テキストチャンネルを作成し、`!status`・`!help`・自然言語指示（画像添付含む）の送受信と自動 `git commit & push` が動作することを確認。
+3. **使いやすさ・安定性の改善**:
+   - 受付時にタスク規模に応じた予測所要時間の目安（`約10〜30秒` / `約30秒〜2分` / `約1〜3分`）を表示し、作業中は15秒ごとに経過時間を自動更新、完了時に合計所要時間を表示する機能を追加。
+   - Python 3.9 環境での `asyncio.Lock` イベントループ不整合を解消（遅延初期化化）。
+   - `AGENTS.md` に「4. 新規プロジェクト立ち上げ・リポジトリ構成の判断方針」（基本は `my-lab/projects/` で開始し、独立アプリ等は別リポジトリ分離を提案する方針）を追記。
 
 ### 現在のステータス・次のタスク
-- **現在進行中:**
-  1. Discordサーバーに `#gemini-agent` チャンネルを作成。
-  2. Mac mini で `projects/discord-ai-agent/.venv` を作成し、`launchd`（`com.mylab.discord-ai-agent.plist`）で常駐起動して実機テストを行う。
+- **稼働状態:** Discord `#gemini-agent` 経由での自然言語指示・ファイル生成・GitHub自動反映が稼働中（例として `projects/company-bus-widget/` の作成も進行中）。
+- **今後のタスク:**
+  - `projects/discord-ai-agent/README.md` への新機能（目安時間・経過表示、画像添付対応）の追記（必要時）。
+  - 並行して進めている新規プロジェクト（社バス時刻表カウントダウンウィジェット等）の開発を `#gemini-agent` または Antigravity IDE から継続。
