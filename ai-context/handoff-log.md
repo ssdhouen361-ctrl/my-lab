@@ -51,7 +51,23 @@
    - `AGENTS.md` に「4. 新規プロジェクト立ち上げ・リポジトリ構成の判断方針」（基本は `my-lab/projects/` で開始し、独立アプリ等は別リポジトリ分離を提案する方針）を追記。
 
 ### 現在のステータス・次のタスク
-- **稼働状態:** Discord `#gemini-agent` 経由での自然言語指示・ファイル生成・GitHub自動反映が稼働中（例として `projects/company-bus-widget/` の作成も進行中）。
-- **今後のタスク:**
-  - `projects/discord-ai-agent/README.md` への新機能（目安時間・経過表示、画像添付対応）の追記（必要時）。
-  - 並行して進めている新規プロジェクト（社バス時刻表カウントダウンウィジェット等）の開発を `#gemini-agent` または Antigravity IDE から継続。
+- **稼働状態:** Discord `#gemini-agent` 経由での自然言語指示・ファイル生成・GitHub自動反映が稼働中。
+
+---
+
+## 進行中プロジェクト: 社バス カウントダウンウィジェット (`company-bus-widget`)
+
+- **設計・手順書:** [projects/company-bus-widget/README.md](../projects/company-bus-widget/README.md)
+- **時刻表データ:** [projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/BusTimetable.kt](../projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/BusTimetable.kt)
+- **ウィジェット本体:** [projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/BusWidgetProvider.kt](../projects/company-bus-widget/app/src/main/java/com/mylab/buswidget/BusWidgetProvider.kt)
+- **自動ビルド設定:** [.github/workflows/build-bus-widget.yml](../.github/workflows/build-bus-widget.yml)
+- **最終更新:** 2026-11-19
+
+### 実装済みの内容
+1. **時刻表画像からの全便データ化 (`1-1` 〜 `1-25`)**:
+   - デフォルトの「JR発 ➔ GNFJ（会社行）」に加え、ワンタップ切替で「GNFJ発 ➔ JR・京急（帰り）」「京急発 ➔ GNFJ」の3ルートに対応。
+2. **Yahoo!乗換案内風カウントダウン × Galaxy Home Up 対応**:
+   - Android 標準の `Chronometer` により省電力で秒単位カウントダウンを表示。
+   - 最小 1×1 マス（40dp）からの縦横自由リサイズに対応し、ウィジェットの高さに応じて「次発のみ」「次々発まで」「3本目まで」を自動出し分け。
+3. **GitHub Actions 自動 APK ビルド**:
+   - プッシュ時に自動で `company-bus-widget.apk` をビルドし、GitHub Releases (`bus-widget-latest`) に公開するワークフローを構築（Android SDK セットアップステップの非推奨パッケージエラーを解消済み）。
