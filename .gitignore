@@ -18,3 +18,4 @@ venv/
 .gemini/
 gha-creds-*.json
 .conversations.json
+projects/discord-ai-agent/attachments/

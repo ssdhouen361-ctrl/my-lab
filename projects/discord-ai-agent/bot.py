@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -11,6 +12,7 @@ from dotenv import dotenv_values, load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 REPO_DIR = Path(os.getenv("REPO_DIR", str(BASE_DIR.parent.parent))).resolve()
 CONVERSATIONS_FILE = BASE_DIR / ".conversations.json"
+ATTACHMENTS_DIR = BASE_DIR / "attachments"
 
 # 1. 本プロジェクトの .env を読み込む
 load_dotenv(BASE_DIR / ".env")
@@ -271,6 +273,41 @@ async def send_long_reply(message: discord.Message, text: str) -> None:
         await message.channel.send(chunk)
 
 
+def estimate_duration_label(prompt: str) -> str:
+    """依頼内容の長さやキーワードから予測所要時間の目安を返す"""
+    heavy_keywords = (
+        "作成", "作って", "実装", "構築", "テスト", "修正", "設計",
+        "リポジトリ", "ウィジェット", "アプリ", "スクリプト", "変更",
+    )
+    has_heavy_kw = any(kw in prompt for kw in heavy_keywords)
+    if len(prompt) > 250 or (has_heavy_kw and len(prompt) > 100):
+        return "約1〜3分"
+    if has_heavy_kw or len(prompt) > 80:
+        return "約30秒〜2分"
+    return "約10〜30秒"
+
+
+async def update_progress_loop(
+    status_msg: discord.Message,
+    estimate_label: str,
+    started_at: float,
+    stop_event: asyncio.Event,
+) -> None:
+    """処理中に15秒ごとに経過時間を受付メッセージへ上書き表示する"""
+    while not stop_event.is_set():
+        try:
+            await asyncio.wait_for(stop_event.wait(), timeout=15)
+            break
+        except asyncio.TimeoutError:
+            elapsed = int(time.monotonic() - started_at)
+            try:
+                await status_msg.edit(
+                    content=f"⏳ Mac mini の `agy` が作業中です...（経過: **{elapsed}秒** / 目安: {estimate_label}）"
+                )
+            except Exception:
+                pass
+
+
 @client.event
 async def on_ready():
     print("==========================================")
@@ -295,7 +332,7 @@ async def on_message(message: discord.Message):
         return
 
     raw_text = message.content.strip()
-    if not raw_text:
+    if not raw_text and not message.attachments:
         return
 
     lower_text = raw_text.lower()
@@ -306,13 +343,20 @@ async def on_message(message: discord.Message):
         await message.reply(
             "📖 **Discord AIエージェント 使い方**\n"
             f"- `#{TARGET_CHANNEL}`（またはこの中のスレッド）にそのまま日本語で指示を書くだけで、`agy` が Mac mini 上で作業して返信します。\n"
+            "- 画像やファイルを添付して送ると、自動で Mac mini 内に保存して `agy` が読み取ります。\n"
             "- ファイルを作成・編集した場合は自動で GitHub (`origin/main`) にコミット＆プッシュします。\n"
             "- `!new` または `リセット` : 会話の記憶をリセットして新しい話題を始めます。\n"
             "- `!status` : `agy` とリポジトリの状態を確認します。\n"
+            "- `!restart` または `再起動` : Bot自身を再起動して最新コードを反映します。\n"
             "- **スレッド機能** を使うと、話題ごとに別々の会話履歴を保てます！",
             mention_author=False,
         )
         return
+
+    # 組み込みコマンド: !restart / 再起動
+    if lower_text in ("!restart", "再起動"):
+        await message.reply("🔄 Botを再起動します（数秒で復帰します）...", mention_author=False)
+        os._exit(0)
 
     # 組み込みコマンド: !new / リセット
     if lower_text in ("!new", "リセット", "/reset"):
@@ -339,36 +383,84 @@ async def on_message(message: discord.Message):
         await message.reply("⏳ 前の作業を実行中です。完了後に順番に処理します...", mention_author=False)
 
     async with agent_lock:
-        await message.reply("🤖 受け付けました！Mac mini の `agy` が作業を開始します...", mention_author=False)
+        estimate_label = estimate_duration_label(raw_text)
+        started_at = time.monotonic()
+        status_msg = await message.reply(
+            f"🤖 受け付けました！Mac mini の `agy` が作業を開始します（目安: **{estimate_label}**）",
+            mention_author=False,
+        )
 
-        async with message.channel.typing():
-            conversations = load_conversations()
-            conv_id = conversations.get(channel_key)
+        stop_event = asyncio.Event()
+        progress_task = asyncio.create_task(
+            update_progress_loop(status_msg, estimate_label, started_at, stop_event)
+        )
 
-            pull_warn = await asyncio.to_thread(sync_git_before)
-            if pull_warn:
-                print(f"⚠️ {pull_warn}")
+        try:
+            async with message.channel.typing():
+                conversations = load_conversations()
+                conv_id = conversations.get(channel_key)
 
-            ok, reply_text, new_conv_id = await run_agy_prompt(raw_text, conv_id)
+                pull_warn = await asyncio.to_thread(sync_git_before)
+                if pull_warn:
+                    print(f"⚠️ {pull_warn}")
 
-            if new_conv_id:
-                conversations[channel_key] = new_conv_id
-                save_conversations(conversations)
+                # 添付ファイルがあればローカルに保存してプロンプトにパスを追記する
+                saved_attachments: list[Path] = []
+                if message.attachments:
+                    ATTACHMENTS_DIR.mkdir(parents=True, exist_ok=True)
+                    for idx, att in enumerate(message.attachments):
+                        safe_name = f"{message.id}_{idx}_{Path(att.filename).name}"
+                        dest_path = ATTACHMENTS_DIR / safe_name
+                        try:
+                            await att.save(dest_path)
+                            saved_attachments.append(dest_path)
+                        except Exception as e:
+                            print(f"⚠️ 添付ファイル保存失敗 ({att.filename}): {e}")
 
-            footer = ""
-            if ok and AUTO_GIT_PUSH:
-                pushed, git_msg, changed_files = await asyncio.to_thread(
-                    commit_and_push_changes, raw_text
-                )
-                if changed_files:
-                    files_preview = ", ".join(f"`{f}`" for f in changed_files[:8])
-                    if len(changed_files) > 8:
-                        files_preview += f" ほか{len(changed_files) - 8}件"
-                    icon = "📦" if pushed else "⚠️"
-                    footer = f"\n\n---\n{icon} {git_msg}\n変更ファイル: {files_preview}"
+                prompt_for_agy = raw_text or "添付されたファイルを確認してください。"
+                if saved_attachments:
+                    att_lines = "\n".join(f"- {p}" for p in saved_attachments)
+                    prompt_for_agy += (
+                        "\n\n【添付ファイル（read_file ツール等で直接読み取ってください）】\n"
+                        f"{att_lines}"
+                    )
+
+                ok, reply_text, new_conv_id = await run_agy_prompt(prompt_for_agy, conv_id)
+
+                if new_conv_id:
+                    conversations[channel_key] = new_conv_id
+                    save_conversations(conversations)
+
+                footer = ""
+                changed_files: list[str] = []
+                if ok and AUTO_GIT_PUSH:
+                    pushed, git_msg, changed_files = await asyncio.to_thread(
+                        commit_and_push_changes, raw_text or "attachment"
+                    )
+                    if changed_files:
+                        files_preview = ", ".join(f"`{f}`" for f in changed_files[:8])
+                        if len(changed_files) > 8:
+                            files_preview += f" ほか{len(changed_files) - 8}件"
+                        icon = "📦" if pushed else "⚠️"
+                        footer = f"\n\n---\n{icon} {git_msg}\n変更ファイル: {files_preview}"
+        finally:
+            stop_event.set()
+            await progress_task
+
+        elapsed_total = int(time.monotonic() - started_at)
+        try:
+            done_icon = "✅" if ok else "⚠️"
+            await status_msg.edit(content=f"{done_icon} 処理完了（所要時間: **{elapsed_total}秒**）")
+        except Exception:
+            pass
 
         prefix = "" if ok else "⚠️ **エラーが発生しました**\n"
         await send_long_reply(message, f"{prefix}{reply_text}{footer}")
+
+        # bot.py 自身が更新された場合は launchd に自動再起動させる
+        if any("discord-ai-agent/bot.py" in f for f in changed_files):
+            print("🔄 bot.py の更新を検知したため、プロセスを再起動します...")
+            os._exit(0)
 
 
 if __name__ == "__main__":
