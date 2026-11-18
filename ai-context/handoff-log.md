@@ -4,34 +4,25 @@
 
 ---
 
-## 現在のアクティブプロジェクト: Galaxyアラーム連動 Apple Music自動再生
+## 完了プロジェクト: Galaxyアラーム連動 Apple Music自動再生
 
-- **設計・手順書:** [docs/music-automation.md](../docs/music-automation.md)
+- **設計・運用マニュアル:** [docs/music-automation.md](../docs/music-automation.md)
+- **プログラム本体:** [projects/music-automation/bot.py](../projects/music-automation/bot.py)
+- **常駐設定ファイル:** [projects/music-automation/com.mylab.music-automation.plist](../projects/music-automation/com.mylab.music-automation.plist)
 - **最終更新:** 2026-11-18
 
-### 完了した作業
-- プロジェクト全体の設計書およびStep 1（Discord準備手順）を `docs/music-automation.md` に作成。
-- 秘密情報（Discordトークン等）の誤コミットを防ぐための `.gitignore` 整備とディレクトリ構成の定義。
+### 実装・構築済みの内容
+1. **Discord連携基盤の構築**:
+   - `#mac-control` チャンネル、Webhook、および `MacMagicBot` を作成。
+2. **Mac mini 制御Bot (`bot.py`) の実装**:
+   - `switchaudio-osx` (`/opt/homebrew/bin/SwitchAudioSource`) を導入し、イヤホン等が接続されていても起床時は強制的に `Mac miniのスピーカー` へ出力先を切り替える機能を実装。
+   - `music wakeup` 受信時、変更前のスピーカーと音量を記憶した上で、音量を `100%` にして Apple Music の『`WakeUp`』プレイリストを再生。
+   - Discordから `music wakeup stop`（または `music stop` 等）が送られた時だけでなく、Mac本体（キーボードやアプリ画面）で直接音楽が停止された場合もバックグラウンド監視（2秒周期）で自動検知し、先に音量を元の数値へ下げてから元のスピーカーへ自動復元する安全設計を実装。
+3. **Galaxy S26 Ultra 連携**:
+   - 「HTTP Request Shortcuts」にて `MacWakeUp`（再生用）と `MacWakeUp Stop`（停止用）を作成。
+   - 「モードとルーチン」にて、平日アラーム解除時に `MacWakeUp` が自動実行されることを確認済み。
+4. **Mac mini 常駐化 (`launchd`)**:
+   - `~/Library/LaunchAgents/com.mylab.music-automation.plist` を登録・起動済み（`RunAtLoad` および `KeepAlive` 有効）。エディタやターミナルを閉じても、Mac再起動後も自動で裏側で稼働する状態。
 
-### 現在のステータス・次のタスク
-- **現在進行中 (Step 1):** ユーザーにてDiscordサーバー（`#mac-control` チャンネル）、Webhook、およびDiscord Bot（Token取得・`MESSAGE CONTENT INTENT` 有効化・サーバー招待）を準備中。
-- **次のタスク (Step 2):**
-  1. Mac miniのターミナルから `osascript` でApple Musicの指定プレイリストが再生できるか単体テストする。
-  2. `projects/music-automation/` にPython仮想環境と `bot.py` を作成し、Discordに「play」と投稿して音楽が流れるかテストする。
-
----
-
-## 並行プロジェクト: スマホ連動 GitHub Issue AIエージェント (Gemini CLI GitHub Actions)
-
-- **設計・手順書:** [projects/github-issue-agent/README.md](../projects/github-issue-agent/README.md)
-- **ワークフロー定義:** [.github/workflows/gemini-cli.yml](../.github/workflows/gemini-cli.yml)
-- **最終更新:** 2026-11-18
-
-### 完了した作業
-- `projects/github-issue-agent/README.md` にアーキテクチャ設計・セキュリティ設計・セットアップ手順書を作成。
-- `.github/workflows/gemini-cli.yml` に `@gemini-cli` メンション検知で起動する GitHub Actions ワークフローを作成。
-- GitHub リポジトリ（`origin/main`）へコミットおよびプッシュ。
-
-### 現在のステータス・次のタスク
-- **現在進行中:** ユーザーにて Google AI Studio で `GEMINI_API_KEY` を発行し、GitHub リポジトリの Secrets に登録する作業。
-- **次のタスク:** スマホ（Galaxy）から GitHub Issues に `@gemini-cli` メンション付きの投稿を行い、自動返信およびファイル操作の動作テストを行う。
+### 今後の拡張アイデア（次のタスク候補）
+- 今後 `MacMagicBot` に音楽再生以外のMac操作コマンド（アプリ起動、スリープ/ロック、通知読み上げなど）を追加する場合は、`projects/music-automation/bot.py` の `on_message` 内に新しいコマンド分岐を追加し、`launchctl kickstart -k gui/$(id -u)/com.mylab.music-automation` で再起動するだけで拡張可能。

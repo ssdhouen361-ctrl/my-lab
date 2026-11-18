@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- サービスの識別名 -->
+    <key>Label</key>
+    <string>com.mylab.music-automation</string>
+
+    <!-- 実行するコマンド（仮想環境のPythonでbot.pyをバッファリングなしで実行） -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/sasadayuto/my-lab/projects/music-automation/.venv/bin/python3</string>
+        <string>-u</string>
+        <string>/Users/sasadayuto/my-lab/projects/music-automation/bot.py</string>
+    </array>
+
+    <!-- 作業フォルダ（.envファイルを正しく読み込むため） -->
+    <key>WorkingDirectory</key>
+    <string>/Users/sasadayuto/my-lab/projects/music-automation</string>
+
+    <!-- 環境変数（SwitchAudioSourceなどのHomebrewコマンドを使えるようにする） -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Macログイン時に自動起動する -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- 万が一エラーやネットワーク切断で終了しても、自動的に再起動し続ける -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- 動作ログの出力先 -->
+    <key>StandardOutPath</key>
+    <string>/Users/sasadayuto/my-lab/projects/music-automation/bot.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/sasadayuto/my-lab/projects/music-automation/bot.error.log</string>
+</dict>
+</plist>
