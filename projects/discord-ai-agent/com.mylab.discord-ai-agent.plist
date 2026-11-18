@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- サービスの識別名 -->
+    <key>Label</key>
+    <string>com.mylab.discord-ai-agent</string>
+
+    <!-- 実行するコマンド（仮想環境のPythonでbot.pyをバッファリングなしで実行） -->
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/sasadayuto/my-lab/projects/discord-ai-agent/.venv/bin/python3</string>
+        <string>-u</string>
+        <string>/Users/sasadayuto/my-lab/projects/discord-ai-agent/bot.py</string>
+    </array>
+
+    <!-- 作業フォルダ -->
+    <key>WorkingDirectory</key>
+    <string>/Users/sasadayuto/my-lab/projects/discord-ai-agent</string>
+
+    <!-- 環境変数（agy・Homebrew・Gitが動くPATHとHOMEを指定） -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>HOME</key>
+        <string>/Users/sasadayuto</string>
+        <key>PATH</key>
+        <string>/Users/sasadayuto/.local/bin:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Macログイン時に自動起動する -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- 終了しても自動再起動する -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- 動作ログの出力先 -->
+    <key>StandardOutPath</key>
+    <string>/Users/sasadayuto/my-lab/projects/discord-ai-agent/bot.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/sasadayuto/my-lab/projects/discord-ai-agent/bot.error.log</string>
+</dict>
+</plist>

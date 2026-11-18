@@ -27,3 +27,25 @@
 
 ### 今後の拡張アイデア（次のタスク候補）
 - 今後 `MacMagicBot` に音楽再生以外のMac操作コマンド（アプリ起動、スリープ/ロック、通知読み上げなど）を追加する場合は、`projects/music-automation/bot.py` の `on_message` 内に新しいコマンド分岐を追加し、`launchctl kickstart -k gui/$(id -u)/com.mylab.music-automation` で再起動するだけで拡張可能。
+
+---
+
+## 進行中プロジェクト: Discord連携 Mac mini AIエージェント (`#gemini-agent`)
+
+- **設計・手順書:** [projects/discord-ai-agent/README.md](../projects/discord-ai-agent/README.md)
+- **プログラム本体:** [projects/discord-ai-agent/bot.py](../projects/discord-ai-agent/bot.py)
+- **常駐設定ファイル:** [projects/discord-ai-agent/com.mylab.discord-ai-agent.plist](../projects/discord-ai-agent/com.mylab.discord-ai-agent.plist)
+- **最終更新:** 2026-11-18
+
+### これまでの経緯と完了した作業
+1. **GitHub Actions 版（`projects/github-issue-agent/`）の検証結果**:
+   - `.github/workflows/gemini-cli.yml` を構築して動作確認を行ったが、Google AI Studio 無料枠（`gemini-3.8-flash`）の1日20リクエスト制限および夜間混雑（503エラー）により、無料APIキーでの安定運用は困難と判明。
+   - また Mac mini 上の旧 `gemini` CLI（`0.68.0`）も個人向けログイン（`oauth-personal`）が提供終了済みであることを確認。
+2. **Discord × Antigravity CLI (`agy`) 版への方針転換と実装**:
+   - Mac mini に公式後継の `agy` CLI（`/Users/sasadayuto/.local/bin/agy`）を導入し、`-p --output-format json --mode accept-edits --sandbox` での非対話実行が正常動作することを確認。
+   - `projects/discord-ai-agent/` に、`#gemini-agent` チャンネル（および配下スレッド）を監視して `agy` を呼び出し、変更があれば自動で `git commit & push` し、2000文字超えの返信も自動分割して返す Bot (`bot.py`) と `launchd` 設定を作成。
+
+### 現在のステータス・次のタスク
+- **現在進行中:**
+  1. Discordサーバーに `#gemini-agent` チャンネルを作成。
+  2. Mac mini で `projects/discord-ai-agent/.venv` を作成し、`launchd`（`com.mylab.discord-ai-agent.plist`）で常駐起動して実機テストを行う。
