@@ -43,6 +43,8 @@ intents.message_content = True
 
 client = discord.Client(intents=intents)
 _agent_lock: Optional[asyncio.Lock] = None
+current_agy_proc: Optional[asyncio.subprocess.Process] = None
+stop_requested: bool = False
 
 
 def get_agent_lock() -> asyncio.Lock:
@@ -194,6 +196,8 @@ async def run_agy_prompt(prompt: str, conversation_id: Optional[str]) -> tuple[b
     env = os.environ.copy()
     env["PATH"] = f"{Path(AGY_BIN).parent}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 
+    global current_agy_proc, stop_requested
+    stop_requested = False
     proc = await asyncio.create_subprocess_exec(
         *cmd,
         cwd=str(REPO_DIR),
@@ -201,6 +205,7 @@ async def run_agy_prompt(prompt: str, conversation_id: Optional[str]) -> tuple[b
         stderr=asyncio.subprocess.PIPE,
         env=env,
     )
+    current_agy_proc = proc
 
     try:
         stdout_bytes, stderr_bytes = await asyncio.wait_for(
@@ -211,6 +216,11 @@ async def run_agy_prompt(prompt: str, conversation_id: Optional[str]) -> tuple[b
         proc.kill()
         await proc.wait()
         return False, f"タイムアウト（{AGY_TIMEOUT_SECONDS}秒）により処理を中断しました。", conversation_id
+    finally:
+        current_agy_proc = None
+
+    if stop_requested:
+        return False, "__STOPPED_BY_USER__", conversation_id
 
     stdout_text = stdout_bytes.decode("utf-8", errors="replace").strip()
     stderr_text = stderr_bytes.decode("utf-8", errors="replace").strip()
@@ -364,11 +374,23 @@ async def on_message(message: discord.Message):
             "- 画像やファイルを添付して送ると、自動で Mac mini 内に保存して `agy` が読み取ります。\n"
             "- ファイルを作成・編集した場合は自動で GitHub (`origin/main`) にコミット＆プッシュします。\n"
             "- `!new` または `リセット` : 会話の記憶をリセットして新しい話題を始めます。\n"
+            "- `!stop` または `中断` : 実行中の作業をその場で強制終了します。\n"
             "- `!status` : `agy` とリポジトリの状態を確認します。\n"
             "- `!restart` または `再起動` : Bot自身を再起動して最新コードを反映します。\n"
             "- **スレッド機能** を使うと、話題ごとに別々の会話履歴を保てます！",
             mention_author=False,
         )
+        return
+
+    # 組み込みコマンド: !stop / 中断
+    if lower_text in ("!stop", "stop", "中断", "ストップ"):
+        global stop_requested
+        if current_agy_proc is not None and current_agy_proc.returncode is None:
+            stop_requested = True
+            current_agy_proc.terminate()
+            await message.reply("🛑 実行中の `agy` 作業を中断しました。次の指示を送れます。", mention_author=False)
+        else:
+            await message.reply("ℹ️ 現在実行中の作業はありません。", mention_author=False)
         return
 
     # 組み込みコマンド: !restart / 再起動
@@ -467,6 +489,13 @@ async def on_message(message: discord.Message):
             await progress_task
 
         elapsed_total = int(time.monotonic() - started_at)
+        if reply_text == "__STOPPED_BY_USER__":
+            try:
+                await status_msg.edit(content=f"🛑 ユーザー指示により中断しました（経過: **{elapsed_total}秒**）")
+            except Exception:
+                pass
+            return
+
         try:
             done_icon = "✅" if ok else "⚠️"
             await status_msg.edit(content=f"{done_icon} 処理完了（所要時間: **{elapsed_total}秒**）")
