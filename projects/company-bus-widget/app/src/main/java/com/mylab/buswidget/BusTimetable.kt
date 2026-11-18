@@ -3,14 +3,15 @@ package com.mylab.buswidget
 import java.util.Calendar
 
 enum class BusRoute(val id: String, val title: String, val shortTitle: String) {
-    JR_TO_GNFJ("jr_to_gnfj", "🚌 JR発 ➔ GNFJ（会社行）", "🚌 JR発 ➔ GNFJ"),
-    GNFJ_TO_STATION("gnfj_to_station", "🚌 GNFJ発 ➔ JR・京急（帰り）", "🚌 GNFJ発 ➔ 駅"),
-    KEIKYU_TO_GNFJ("keikyu_to_gnfj", "🚌 京急発 ➔ GNFJ（会社行）", "🚌 京急発 ➔ GNFJ");
+    JR_TO_GNFJ("jr_to_gnfj", "JR発 ➔ GNFJ（会社行）", "JR発 ➔ GNFJ"),
+    GNFJ_TO_STATION("gnfj_to_station", "GNFJ発 ➔ 駅（帰り）", "GNFJ発 ➔ 駅"),
+    KEIKYU_TO_GNFJ("keikyu_to_gnfj", "京急発 ➔ GNFJ（会社行）", "京急発 ➔ GNFJ");
 
-    fun nextRoute(): BusRoute = when (this) {
+    /** ウィジェットの「⇄ 切替」ボタン用：JR発(往路) と GNFJ発(復路) をワンタップで往復切替 */
+    fun toggleRoundTrip(): BusRoute = when (this) {
         JR_TO_GNFJ -> GNFJ_TO_STATION
-        GNFJ_TO_STATION -> KEIKYU_TO_GNFJ
-        KEIKYU_TO_GNFJ -> JR_TO_GNFJ
+        GNFJ_TO_STATION -> JR_TO_GNFJ
+        KEIKYU_TO_GNFJ -> GNFJ_TO_STATION
     }
 
     companion object {
@@ -32,8 +33,8 @@ data class BusScheduleEntry(
     val depHour: Int,
     val depMinute: Int,
     val depTimeText: String,
-    val arrivalOrSubText: String,
-    val note: String = ""
+    val shortArrText: String,
+    val detailText: String
 ) {
     val totalMinutes: Int get() = depHour * 60 + depMinute
 }
@@ -48,7 +49,7 @@ data class UpcomingBusResult(
 
 object BusTimetable {
 
-    // 画像の時刻表（1-1 〜 1-25）完全収録データ
+    // 画像の時刻表（全25便）完全収録データ
     val ALL_ROWS: List<RawTimetableRow> = listOf(
         RawTimetableRow("1-1",  "07:15", "○", "07:25", "07:26", "07:31"),
         RawTimetableRow("1-2",  "07:50", "○", "08:04", "08:05", "08:10"),
@@ -67,7 +68,7 @@ object BusTimetable {
         RawTimetableRow("1-15", "17:30", "○", "○",     "○",     ""),
         RawTimetableRow("1-16", "17:50", "○", "○",     "○",     ""),
         RawTimetableRow("1-17", "18:10", "○", "○",     "○",     ""),
-        RawTimetableRow("1-18", "18:40", "○", "○",     "○",     ""),
+        RawTimetableRow("18",   "18:40", "○", "○",     "○",     ""),
         RawTimetableRow("1-19", "19:10", "○", "○",     "○",     ""),
         RawTimetableRow("1-20", "19:43", "○", "○",     "○",     ""),
         RawTimetableRow("1-21", "20:23", "○", "○",     "○",     ""),
@@ -89,32 +90,37 @@ object BusTimetable {
         return when (route) {
             BusRoute.JR_TO_GNFJ -> ALL_ROWS.mapNotNull { row ->
                 val (h, m) = parseHourMin(row.jrDep) ?: return@mapNotNull null
-                val note = if (row.keikyuBoard == "－") "京急通過" else "京急 ${row.keikyuBoard}"
+                val note = if (row.keikyuBoard == "－") "京急通過" else "京急 ${row.keikyuBoard}経由"
                 BusScheduleEntry(
                     code = row.code,
                     depHour = h,
                     depMinute = m,
                     depTimeText = row.jrDep,
-                    arrivalOrSubText = "${row.gnfjArr} GNFJ着",
-                    note = note
+                    shortArrText = "${row.gnfjArr}着",
+                    detailText = "GNFJ ${row.gnfjArr}着（$note）"
                 )
             }
 
             BusRoute.GNFJ_TO_STATION -> ALL_ROWS.mapNotNull { row ->
                 val (h, m) = parseHourMin(row.gnfjDep) ?: return@mapNotNull null
                 val isKeikyuOnly = row.jrDep == "－"
-                val sub = when {
-                    isKeikyuOnly -> "⚠️京急のみ(JR通過)"
-                    row.jrDep.contains(":") -> "JR ${row.jrDep}着/発"
-                    else -> "京急・JR方面"
+                val shortArr = when {
+                    isKeikyuOnly -> "京急のみ"
+                    row.jrDep.contains(":") -> "JR ${row.jrDep}着"
+                    else -> "京急・JR行"
+                }
+                val detail = when {
+                    isKeikyuOnly -> "⚠️ 京急降車のみ（JR通過）"
+                    row.jrDep.contains(":") -> "京急経由 ➔ JR ${row.jrDep}着"
+                    else -> "京急・JR方面（降車便）"
                 }
                 BusScheduleEntry(
                     code = row.code,
                     depHour = h,
                     depMinute = m,
                     depTimeText = row.gnfjDep,
-                    arrivalOrSubText = sub,
-                    note = if (isKeikyuOnly) "JR通過" else "JR・京急行"
+                    shortArrText = shortArr,
+                    detailText = detail
                 )
             }
 
@@ -125,8 +131,8 @@ object BusTimetable {
                     depHour = h,
                     depMinute = m,
                     depTimeText = row.keikyuBoard,
-                    arrivalOrSubText = "${row.gnfjArr} GNFJ着",
-                    note = "JR ${row.jrDep}発便"
+                    shortArrText = "${row.gnfjArr}着",
+                    detailText = "GNFJ ${row.gnfjArr}着（JR ${row.jrDep}発）"
                 )
             }
         }
@@ -165,7 +171,6 @@ object BusTimetable {
             )
         }
 
-        // 本日の最終便が終了している場合は明日の始発へのカウントダウンを返す
         val tomorrowCal = (nowCal.clone() as Calendar).apply {
             add(Calendar.DAY_OF_YEAR, 1)
             set(Calendar.HOUR_OF_DAY, firstEntry.depHour)

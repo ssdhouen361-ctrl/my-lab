@@ -57,6 +57,7 @@ class BusWidgetProvider : AppWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_bus_countdown)
             views.setTextViewText(R.id.tv_route_title, route.shortTitle)
 
+            // 往復切替ボタン（JR発 ⇄ GNFJ発）
             val toggleIntent = Intent(context, BusWidgetProvider::class.java).apply {
                 action = ACTION_TOGGLE_ROUTE
             }
@@ -70,11 +71,12 @@ class BusWidgetProvider : AppWidgetProvider() {
                 )
             )
 
+            // カウントダウン部分をタップすると最新状態に手動更新
             val refreshIntent = Intent(context, BusWidgetProvider::class.java).apply {
                 action = ACTION_REFRESH
             }
             views.setOnClickPendingIntent(
-                R.id.btn_refresh,
+                R.id.right_countdown_area,
                 PendingIntent.getBroadcast(
                     context,
                     1002,
@@ -83,6 +85,7 @@ class BusWidgetProvider : AppWidgetProvider() {
                 )
             )
 
+            // メイン領域をタップすると全体時刻表アプリを起動
             val openAppIntent = Intent(context, MainActivity::class.java)
             views.setOnClickPendingIntent(
                 R.id.main_body,
@@ -100,9 +103,9 @@ class BusWidgetProvider : AppWidgetProvider() {
 
             if (!result.isTomorrow && result.upcomingToday.isNotEmpty()) {
                 val first = result.upcomingToday[0]
-                views.setTextViewText(R.id.tv_next_badge, "次発 ${first.code}便")
+                views.setTextViewText(R.id.tv_next_badge, "次発")
                 views.setTextViewText(R.id.tv_next_time, "${first.depTimeText}発")
-                views.setTextViewText(R.id.tv_next_sub, "${first.arrivalOrSubText} (${first.note})")
+                views.setTextViewText(R.id.tv_next_sub, first.shortArrText)
                 views.setTextViewText(R.id.tv_countdown_label, "発車まであと")
                 views.setViewVisibility(R.id.chronometer_countdown, View.VISIBLE)
                 views.setViewVisibility(R.id.tv_status_fallback, View.GONE)
@@ -112,48 +115,56 @@ class BusWidgetProvider : AppWidgetProvider() {
                 if (second != null) {
                     views.setTextViewText(
                         R.id.tv_second_info,
-                        "${second.depTimeText}発 (${second.code}) ➔ ${second.arrivalOrSubText}"
+                        "${second.depTimeText}発 ➔ ${second.shortArrText}"
                     )
                 } else {
-                    views.setTextViewText(R.id.tv_second_info, "本日の次発が最終便です")
+                    views.setTextViewText(R.id.tv_second_info, "次発が本日の最終便です")
                 }
 
                 val third = result.upcomingToday.getOrNull(2)
                 if (third != null) {
                     views.setTextViewText(
                         R.id.tv_third_info,
-                        "${third.depTimeText}発 (${third.code}) ➔ ${third.arrivalOrSubText}"
+                        "${third.depTimeText}発 ➔ ${third.shortArrText}"
                     )
                 } else {
                     views.setTextViewText(
                         R.id.tv_third_info,
-                        "明日始発 ${result.firstBusTomorrow.depTimeText}発 (${result.firstBusTomorrow.code})"
+                        "明日始発 ${result.firstBusTomorrow.depTimeText}発 ➔ ${result.firstBusTomorrow.shortArrText}"
                     )
                 }
             } else {
                 val tomorrowFirst = result.firstBusTomorrow
-                views.setTextViewText(R.id.tv_next_badge, "明日始発 ${tomorrowFirst.code}便")
+                views.setTextViewText(R.id.tv_next_badge, "明日始発")
                 views.setTextViewText(R.id.tv_next_time, "${tomorrowFirst.depTimeText}発")
-                views.setTextViewText(R.id.tv_next_sub, "本日の運行は終了しました")
+                views.setTextViewText(R.id.tv_next_sub, tomorrowFirst.shortArrText)
                 views.setTextViewText(R.id.tv_countdown_label, "始発まであと")
                 views.setViewVisibility(R.id.chronometer_countdown, View.VISIBLE)
                 views.setViewVisibility(R.id.tv_status_fallback, View.GONE)
                 views.setChronometer(R.id.chronometer_countdown, chronometerBase, null, true)
 
+                val allEntries = BusTimetable.getScheduleForRoute(route)
+                val secondTomorrow = allEntries.getOrNull(1)
+                val thirdTomorrow = allEntries.getOrNull(2)
                 views.setTextViewText(
                     R.id.tv_second_info,
-                    "明日 ${tomorrowFirst.depTimeText}発 ➔ ${tomorrowFirst.arrivalOrSubText}"
+                    if (secondTomorrow != null) "${secondTomorrow.depTimeText}発 ➔ ${secondTomorrow.shortArrText}"
+                    else "タップで時刻表を表示"
                 )
-                views.setTextViewText(R.id.tv_third_info, "タップして時刻表一覧を表示")
+                views.setTextViewText(
+                    R.id.tv_third_info,
+                    if (thirdTomorrow != null) "${thirdTomorrow.depTimeText}発 ➔ ${thirdTomorrow.shortArrText}"
+                    else ""
+                )
             }
 
-            // Galaxy Home Up 自由リサイズ対応：高さに応じて次々発・3本目の表示を自動調整
+            // Galaxy Home Up 自由リサイズ対応
             val minHeightDp = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 140) ?: 140
             when {
-                minHeightDp < 105 -> {
+                minHeightDp < 95 -> {
                     views.setViewVisibility(R.id.upcoming_container, View.GONE)
                 }
-                minHeightDp < 150 -> {
+                minHeightDp < 130 -> {
                     views.setViewVisibility(R.id.upcoming_container, View.VISIBLE)
                     views.setViewVisibility(R.id.row_second_bus, View.VISIBLE)
                     views.setViewVisibility(R.id.row_third_bus, View.GONE)
@@ -218,7 +229,7 @@ class BusWidgetProvider : AppWidgetProvider() {
         super.onReceive(context, intent)
         when (intent.action) {
             ACTION_TOGGLE_ROUTE -> {
-                val next = getSavedRoute(context).nextRoute()
+                val next = getSavedRoute(context).toggleRoundTrip()
                 saveRoute(context, next)
                 updateAllWidgets(context)
             }

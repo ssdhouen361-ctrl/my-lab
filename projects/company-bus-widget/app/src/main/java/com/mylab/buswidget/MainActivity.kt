@@ -20,8 +20,11 @@ class MainActivity : Activity() {
     private lateinit var tvMainNextTime: TextView
     private lateinit var tvMainCountdown: TextView
     private lateinit var tvMainSubInfo: TextView
-    private lateinit var scheduleListContainer: LinearLayout
+    private lateinit var tableContainer: LinearLayout
+    private lateinit var btnViewFullTable: TextView
+    private lateinit var btnViewRouteOnly: TextView
     private val routeButtons = mutableMapOf<BusRoute, TextView>()
+    private var showFullTable: Boolean = true
 
     private val tickRunnable = object : Runnable {
         override fun run() {
@@ -73,7 +76,7 @@ class MainActivity : Activity() {
         }
 
         val title = TextView(this).apply {
-            text = "🚌 社バス カウントダウン (GNFJ)"
+            text = "社バス カウントダウン (GNFJ)"
             setTextColor(Color.WHITE)
             textSize = 20f
             setTypeface(typeface, Typeface.BOLD)
@@ -81,10 +84,10 @@ class MainActivity : Activity() {
         root.addView(title)
 
         val subtitle = TextView(this).apply {
-            text = "ルートを切り替えるとホーム画面のウィジェットも連動して切り替わります"
+            text = "方面を切り替えるとホーム画面のウィジェットも連動して切り替わります"
             setTextColor(Color.parseColor("#94A3B8"))
             textSize = 12f
-            setPadding(0, dp(4), 0, dp(14))
+            setPadding(0, dp(4), 0, dp(12))
         }
         root.addView(subtitle)
 
@@ -100,9 +103,9 @@ class MainActivity : Activity() {
         BusRoute.entries.forEachIndexed { idx, route ->
             val btn = TextView(this).apply {
                 text = when (route) {
-                    BusRoute.JR_TO_GNFJ -> "JR発➔会社"
-                    BusRoute.GNFJ_TO_STATION -> "会社発➔駅"
-                    BusRoute.KEIKYU_TO_GNFJ -> "京急発➔会社"
+                    BusRoute.JR_TO_GNFJ -> "JR発 ➔ GNFJ"
+                    BusRoute.GNFJ_TO_STATION -> "GNFJ発 ➔ 駅"
+                    BusRoute.KEIKYU_TO_GNFJ -> "京急発 ➔ GNFJ"
                 }
                 gravity = Gravity.CENTER
                 textSize = 13f
@@ -122,7 +125,7 @@ class MainActivity : Activity() {
         }
         root.addView(tabRow)
 
-        // Yahoo!乗換案内風メインカウントダウンカード
+        // メインカウントダウンカード
         val card = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             background = roundedBg(Color.parseColor("#1E293B"), 18, Color.parseColor("#334155"))
@@ -135,7 +138,7 @@ class MainActivity : Activity() {
 
         tvRouteHeader = TextView(this).apply {
             setTextColor(Color.parseColor("#38BDF8"))
-            textSize = 14f
+            textSize = 15f
             setTypeface(typeface, Typeface.BOLD)
         }
         card.addView(tvRouteHeader)
@@ -150,7 +153,7 @@ class MainActivity : Activity() {
 
         tvMainCountdown = TextView(this).apply {
             setTextColor(Color.parseColor("#FBBF24"))
-            textSize = 36f
+            textSize = 34f
             setTypeface(typeface, Typeface.BOLD)
             setPadding(0, dp(2), 0, dp(4))
         }
@@ -163,20 +166,52 @@ class MainActivity : Activity() {
         card.addView(tvMainSubInfo)
         root.addView(card)
 
-        // 時刻表一覧見出し
-        val listHeader = TextView(this).apply {
-            text = "📋 時刻表一覧（次発をハイライト表示）"
-            setTextColor(Color.parseColor("#E2E8F0"))
-            textSize = 15f
-            setTypeface(typeface, Typeface.BOLD)
-            setPadding(0, 0, 0, dp(8))
+        // 時刻表表示モード切替（「時刻表全体（全列）」/「選択ルートのみ」）
+        val modeRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            ).apply { bottomMargin = dp(10) }
         }
-        root.addView(listHeader)
 
-        scheduleListContainer = LinearLayout(this).apply {
+        btnViewFullTable = TextView(this).apply {
+            text = "📊 時刻表全体（全便表）"
+            gravity = Gravity.CENTER
+            textSize = 13f
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply {
+                rightMargin = dp(6)
+            }
+            setOnClickListener {
+                showFullTable = true
+                refreshUi()
+            }
+        }
+
+        btnViewRouteOnly = TextView(this).apply {
+            text = "📋 選択方面のみ"
+            gravity = Gravity.CENTER
+            textSize = 13f
+            setTypeface(typeface, Typeface.BOLD)
+            setPadding(dp(10), dp(8), dp(10), dp(8))
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            setOnClickListener {
+                showFullTable = false
+                refreshUi()
+            }
+        }
+
+        modeRow.addView(btnViewFullTable)
+        modeRow.addView(btnViewRouteOnly)
+        root.addView(modeRow)
+
+        tableContainer = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
-        root.addView(scheduleListContainer)
+        root.addView(tableContainer)
 
         scroll.addView(root)
         return scroll
@@ -197,6 +232,20 @@ class MainActivity : Activity() {
             btn.setTextColor(if (selected) Color.WHITE else Color.parseColor("#94A3B8"))
         }
 
+        btnViewFullTable.background = roundedBg(
+            if (showFullTable) Color.parseColor("#0284C7") else Color.parseColor("#1E293B"),
+            10,
+            if (showFullTable) Color.parseColor("#38BDF8") else Color.parseColor("#334155")
+        )
+        btnViewFullTable.setTextColor(if (showFullTable) Color.WHITE else Color.parseColor("#94A3B8"))
+
+        btnViewRouteOnly.background = roundedBg(
+            if (!showFullTable) Color.parseColor("#0284C7") else Color.parseColor("#1E293B"),
+            10,
+            if (!showFullTable) Color.parseColor("#38BDF8") else Color.parseColor("#334155")
+        )
+        btnViewRouteOnly.setTextColor(if (!showFullTable) Color.WHITE else Color.parseColor("#94A3B8"))
+
         tvRouteHeader.text = currentRoute.title
 
         val remainSec = ((result.nextDepartureMillis - nowMillis) / 1000L).coerceAtLeast(0L)
@@ -213,24 +262,125 @@ class MainActivity : Activity() {
         if (!result.isTomorrow && result.upcomingToday.isNotEmpty()) {
             val nextBus = result.upcomingToday[0]
             activeCode = nextBus.code
-            tvMainNextTime.text = "次発 ${nextBus.depTimeText}発（${nextBus.code}便）"
+            tvMainNextTime.text = "次発 ${nextBus.depTimeText}発 ➔ ${nextBus.shortArrText}"
             tvMainCountdown.text = countdownStr
             val second = result.upcomingToday.getOrNull(1)
+            val third = result.upcomingToday.getOrNull(2)
             tvMainSubInfo.text = buildString {
-                append("${nextBus.arrivalOrSubText} / ${nextBus.note}")
+                append(nextBus.detailText)
                 if (second != null) {
-                    append("\n次々発: ${second.depTimeText}発 (${second.code}便) ➔ ${second.arrivalOrSubText}")
+                    append("\n次々発: ${second.depTimeText}発 ➔ ${second.shortArrText}")
+                }
+                if (third != null) {
+                    append("  /  3本目: ${third.depTimeText}発 ➔ ${third.shortArrText}")
                 }
             }
         } else {
             val first = result.firstBusTomorrow
-            activeCode = null
-            tvMainNextTime.text = "本日の運行終了（明日始発 ${first.depTimeText}発）"
+            activeCode = first.code
+            tvMainNextTime.text = "明日始発 ${first.depTimeText}発 ➔ ${first.shortArrText}"
             tvMainCountdown.text = countdownStr
-            tvMainSubInfo.text = "明日の始発 (${first.code}便) ➔ ${first.arrivalOrSubText}"
+            tvMainSubInfo.text = "本日の運行は終了しました（明日の始発までカウントダウン中）"
         }
 
-        scheduleListContainer.removeAllViews()
+        tableContainer.removeAllViews()
+        if (showFullTable) {
+            renderFullTimetable(activeCode, currentRoute)
+        } else {
+            renderRouteScheduleList(currentRoute, activeCode)
+        }
+    }
+
+    /** 元の時刻表画像と同じ5列（GNFJ発 | 京急(降) | JR発 | 京急(乗) | GNFJ着）の全体表を描画 */
+    private fun renderFullTimetable(activeCode: String?, currentRoute: BusRoute) {
+        val tableCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            background = roundedBg(Color.parseColor("#1E293B"), 12, Color.parseColor("#334155"))
+            setPadding(dp(2), dp(2), dp(2), dp(6))
+        }
+
+        // ヘッダー行
+        val headerRow = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            background = roundedBg(Color.parseColor("#0D6EFD"), 10, 0)
+            setPadding(dp(6), dp(10), dp(6), dp(10))
+        }
+        val headers = listOf("GNFJ発", "京急(降)", "JR発", "京急(乗)", "GNFJ着")
+        headers.forEachIndexed { idx, hText ->
+            val isHighlightedCol =
+                (currentRoute == BusRoute.GNFJ_TO_STATION && idx == 0) ||
+                (currentRoute == BusRoute.JR_TO_GNFJ && idx == 2) ||
+                (currentRoute == BusRoute.KEIKYU_TO_GNFJ && idx == 3)
+            val tv = TextView(this).apply {
+                text = hText
+                gravity = Gravity.CENTER
+                setTextColor(if (isHighlightedCol) Color.parseColor("#FDE047") else Color.WHITE)
+                textSize = 12f
+                setTypeface(typeface, Typeface.BOLD)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+            headerRow.addView(tv)
+        }
+        tableCard.addView(headerRow)
+
+        // 全25便のデータ行
+        BusTimetable.ALL_ROWS.forEachIndexed { index, row ->
+            val isNextRow = row.code == activeCode
+            val bgColor = when {
+                isNextRow -> Color.parseColor("#1E3A8A")
+                index % 2 == 0 -> Color.parseColor("#0F172A")
+                else -> Color.parseColor("#1E293B")
+            }
+
+            val tr = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setBackgroundColor(bgColor)
+                setPadding(dp(6), dp(8), dp(6), dp(8))
+            }
+
+            val cols = listOf(
+                row.gnfjDep,
+                row.keikyuDrop,
+                row.jrDep,
+                row.keikyuBoard,
+                if (row.gnfjArr.isEmpty()) "－" else row.gnfjArr
+            )
+
+            cols.forEachIndexed { colIdx, cellText ->
+                val isTargetCol =
+                    (currentRoute == BusRoute.GNFJ_TO_STATION && colIdx == 0) ||
+                    (currentRoute == BusRoute.JR_TO_GNFJ && colIdx == 2) ||
+                    (currentRoute == BusRoute.KEIKYU_TO_GNFJ && colIdx == 3)
+
+                val tv = TextView(this).apply {
+                    text = if (isNextRow && isTargetCol) "▶$cellText" else cellText
+                    gravity = Gravity.CENTER
+                    textSize = 13f
+                    setTypeface(
+                        typeface,
+                        if (isNextRow || isTargetCol) Typeface.BOLD else Typeface.NORMAL
+                    )
+                    setTextColor(
+                        when {
+                            isNextRow && isTargetCol -> Color.parseColor("#FBBF24")
+                            isNextRow -> Color.WHITE
+                            cellText == "－" -> Color.parseColor("#64748B")
+                            isTargetCol -> Color.parseColor("#38BDF8")
+                            else -> Color.parseColor("#E2E8F0")
+                        }
+                    )
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+                tr.addView(tv)
+            }
+            tableCard.addView(tr)
+        }
+
+        tableContainer.addView(tableCard)
+    }
+
+    private fun renderRouteScheduleList(currentRoute: BusRoute, activeCode: String?) {
         val entries = BusTimetable.getScheduleForRoute(currentRoute)
         for (entry in entries) {
             val isNext = entry.code == activeCode
@@ -242,40 +392,31 @@ class MainActivity : Activity() {
                     10,
                     if (isNext) Color.parseColor("#FBBF24") else 0
                 )
-                setPadding(dp(12), dp(10), dp(12), dp(10))
+                setPadding(dp(14), dp(10), dp(14), dp(10))
                 layoutParams = LinearLayout.LayoutParams(
                     LinearLayout.LayoutParams.MATCH_PARENT,
                     LinearLayout.LayoutParams.WRAP_CONTENT
                 ).apply { bottomMargin = dp(6) }
             }
 
-            val codeTv = TextView(this).apply {
-                text = if (isNext) "▶ ${entry.code}" else entry.code
-                setTextColor(if (isNext) Color.parseColor("#FBBF24") else Color.parseColor("#94A3B8"))
-                textSize = 13f
-                setTypeface(typeface, Typeface.BOLD)
-                layoutParams = LinearLayout.LayoutParams(dp(64), LinearLayout.LayoutParams.WRAP_CONTENT)
-            }
-
             val timeTv = TextView(this).apply {
-                text = "${entry.depTimeText}発"
-                setTextColor(Color.WHITE)
+                text = if (isNext) "▶ ${entry.depTimeText}発" else "${entry.depTimeText}発"
+                setTextColor(if (isNext) Color.parseColor("#FBBF24") else Color.WHITE)
                 textSize = 16f
                 setTypeface(typeface, Typeface.BOLD)
-                layoutParams = LinearLayout.LayoutParams(dp(86), LinearLayout.LayoutParams.WRAP_CONTENT)
+                layoutParams = LinearLayout.LayoutParams(dp(105), LinearLayout.LayoutParams.WRAP_CONTENT)
             }
 
             val detailTv = TextView(this).apply {
-                text = "${entry.arrivalOrSubText} (${entry.note})"
+                text = entry.detailText
                 setTextColor(Color.parseColor("#CBD5E1"))
-                textSize = 12f
+                textSize = 13f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
 
-            rowView.addView(codeTv)
             rowView.addView(timeTv)
             rowView.addView(detailTv)
-            scheduleListContainer.addView(rowView)
+            tableContainer.addView(rowView)
         }
     }
 }
