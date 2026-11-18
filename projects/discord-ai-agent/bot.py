@@ -42,7 +42,15 @@ intents = discord.Intents.default()
 intents.message_content = True
 
 client = discord.Client(intents=intents)
-agent_lock = asyncio.Lock()
+_agent_lock: Optional[asyncio.Lock] = None
+
+
+def get_agent_lock() -> asyncio.Lock:
+    """実行中のイベントループに紐づく asyncio.Lock を返す（Python 3.9互換）"""
+    global _agent_lock
+    if _agent_lock is None:
+        _agent_lock = asyncio.Lock()
+    return _agent_lock
 
 
 def load_conversations() -> dict[str, str]:
@@ -379,10 +387,11 @@ async def on_message(message: discord.Message):
         )
         return
 
-    if agent_lock.locked():
+    lock = get_agent_lock()
+    if lock.locked():
         await message.reply("⏳ 前の作業を実行中です。完了後に順番に処理します...", mention_author=False)
 
-    async with agent_lock:
+    async with lock:
         estimate_label = estimate_duration_label(raw_text)
         started_at = time.monotonic()
         status_msg = await message.reply(
