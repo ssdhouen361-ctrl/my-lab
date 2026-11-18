@@ -75,7 +75,7 @@ jobs:
           REPOSITORY: ${{ github.repository }}
         with:
           gemini_api_key: ${{ secrets.GEMINI_API_KEY }}
-          gemini_model: "gemini-2.5-flash"
+          gemini_model: "gemini-3.8-flash"
           # 自動実行環境でシェルコマンド（ghコマンドやgitコマンド）を使えるように許可
           settings: |
             {
@@ -112,3 +112,14 @@ jobs:
             3. 作業が完了したら（または質問への回答がまとまったら）、必ず以下のコマンドを使って **Issue #${{ env.ISSUE_NUMBER }} に日本語で返信コメントを投稿** してください：
                `gh issue comment ${{ env.ISSUE_NUMBER }} --repo ${{ env.REPOSITORY }} --body "<返信内容>"`
                （※長文や改行を含む場合は、一時ファイルに書き出してから `gh issue comment ${{ env.ISSUE_NUMBER }} --repo ${{ env.REPOSITORY }} --body-file <一時ファイル>` を使うと安全です。一時ファイルはコミットしないでください。）
+
+      # Step 5: 万が一エラーで止まった場合に、スマホ側で気づけるようIssueにエラー通知を送る
+      - name: Notify on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --repo "$REPO" --body "⚠️ Gemini CLI の実行中にエラーが発生しました（APIの混雑や制限などの可能性があります）。詳細は [Actionsの実行ログ]($RUN_URL) をご確認ください。"
