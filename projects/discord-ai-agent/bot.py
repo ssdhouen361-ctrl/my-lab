@@ -27,7 +27,7 @@ if not TOKEN:
 TARGET_CHANNEL = os.getenv("DISCORD_CHANNEL_NAME", "gemini-agent")
 AGY_BIN = os.getenv("AGY_BIN", "/Users/sasadayuto/.local/bin/agy")
 AGY_MODE = os.getenv("AGY_MODE", "accept-edits")
-AGY_TIMEOUT_SECONDS = int(os.getenv("AGY_TIMEOUT_SECONDS", "300"))
+AGY_TIMEOUT_SECONDS = int(os.getenv("AGY_TIMEOUT_SECONDS", "900"))
 AUTO_GIT_PUSH = os.getenv("AUTO_GIT_PUSH", "true").lower() == "true"
 
 _raw_allowed_ids = os.getenv("DISCORD_ALLOWED_USER_IDS", "").strip()
@@ -216,9 +216,19 @@ async def run_agy_prompt(prompt: str, conversation_id: Optional[str]) -> tuple[b
     stderr_text = stderr_bytes.decode("utf-8", errors="replace").strip()
 
     parsed = extract_json_result(stdout_text)
+    new_conv_id = (parsed.get("conversation_id") if parsed else None) or conversation_id
     if proc.returncode != 0:
         detail = stderr_text or stdout_text or f"終了コード: {proc.returncode}"
-        return False, f"agy 実行エラー:\n```\n{detail[:1500]}\n```", conversation_id
+        if "print_timeout" in detail or "DEADLINE_EXCEEDED" in detail:
+            partial_resp = ((parsed or {}).get("response") or "").strip()
+            msg = (
+                f"作業が {AGY_TIMEOUT_SECONDS}秒 を超えたため一時中断しました。\n"
+                "「続きをお願い」と送れば、同じ会話の途中から再開できます。"
+            )
+            if partial_resp:
+                msg += f"\n\n【途中までの出力】\n{partial_resp[:1200]}"
+            return False, msg, new_conv_id
+        return False, f"agy 実行エラー:\n```\n{detail[:1500]}\n```", new_conv_id
 
     if parsed:
         new_conv_id = parsed.get("conversation_id") or conversation_id
