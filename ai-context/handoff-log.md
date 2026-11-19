@@ -83,3 +83,23 @@
    - アプリを開いた際、上部のカウントダウン表示が大きすぎて時刻表全体が縦に長くなり見づらいため、上部カウントダウンをスリム化し、時刻表の行間も詰めて一画面での一覧性を高める。
 3. **Galaxy「モードとルーチン」での往復切替対応:**
    - ルーチンから「往路（JR発）に切替」「復路（GNFJ発）に切替」「往復トグル切替」を直接実行できるよう、専用のショートカット／アクティビティ（Activity Alias / App Shortcuts）を追加する。
+
+---
+
+## 完了プロジェクト: KataGo × KaTrain 囲碁AI 対局・検討環境 (`katago-env`)
+
+- **手順書:** [projects/katago-env/README.md](../projects/katago-env/README.md)
+- **ワンクリック起動スクリプト:** [projects/katago-env/launch-katrain.command](../projects/katago-env/launch-katrain.command)
+- **最終更新:** 2026-11-19
+
+### 導入・設定済みの内容
+1. **KataGo v1.18.2（Apple M6 Metal GPU バックエンド）導入:**
+   - Homebrew で `/opt/homebrew/bin/katago` および `python@3.12` を導入。
+   - 同梱の最新強モデル `/opt/homebrew/share/katago/kata1-b18c384nbt-s9996604416-d4316597426.bin.gz` を使い、Metal GPU 上で19路盤の高速解析が正常動作することを実機検証済み。
+2. **KaTrain v1.20.0 導入・日本語＆高速設定済み:**
+   - `projects/katago-env/.venv`（Python 3.12）に `katrain` を導入。
+   - `~/.katrain/config.json` を事前設定し、初回起動時から **日本語UI・19路日本ルール（コミ6.5目）・Homebrew Metal版 KataGo＋b18c384nbtモデル** が自動で使われる状態にした。
+   - Finder からダブルクリックで起動できる `launch-katrain.command` を作成済み。
+3. **次のステップ（ユーザー側）:**
+   - Mac mini で `launch-katrain.command` をダブルクリックして起動確認。
+   - Galaxy Tab から使う場合は Chrome リモートデスクトップで Mac mini に接続して操作（今後タブレット専用 Web 碁盤を作りたくなった場合は同じ `/opt/homebrew/bin/katago` をそのまま流用可能）。

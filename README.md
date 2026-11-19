@@ -18,5 +18,7 @@ AI支援による実験的開発やプログラミングの記録用リポジト
   Discordの `#gemini-agent` チャンネルに指示を書くだけで、Mac mini上の Antigravity CLI (`agy`) が自律的に作業・GitHub反映・返信を行うシステム。
 - **[社バス カウントダウンウィジェット (GNFJ)](projects/company-bus-widget/README.md)**  
   Yahoo!乗換案内風 × Galaxy「Home Up」対応の社バス発車カウントダウン Android ウィジェット（v1.0.0 完成・固定保管済み）。
+- **[KataGo × KaTrain 囲碁AI 対局・検討環境](projects/katago-env/README.md)**  
+  Mac mini（Apple M6）上で KataGo と定番ソフト KaTrain を動かし、Galaxy Tab からも19路盤の対局・検討を行う環境。
 - **[スマホ連動 GitHub Issue AIエージェント](projects/github-issue-agent/README.md)** *(検証・保留)*  
   GitHub Issues に `@gemini-cli` と書き込むクラウド版ワークフロー（無料枠APIキーの1日20回制限により現在はDiscord版へ移行）。
