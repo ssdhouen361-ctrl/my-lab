@@ -100,6 +100,7 @@
    - `projects/katago-env/.venv`（Python 3.12）に `katrain` を導入。
    - `~/.katrain/config.json` を事前設定し、初回起動時から **日本語UI・19路日本ルール（コミ6.5目）・Homebrew Metal版 KataGo＋b18c384nbtモデル** が自動で使われる状態にした。
    - Finder からダブルクリックで起動できる `launch-katrain.command` を作成済み。
-3. **次のステップ（ユーザー側）:**
-   - Mac mini で `launch-katrain.command` をダブルクリックして起動確認。
-   - Galaxy Tab から使う場合は Chrome リモートデスクトップで Mac mini に接続して操作（今後タブレット専用 Web 碁盤を作りたくなった場合は同じ `/opt/homebrew/bin/katago` をそのまま流用可能）。
+3. **デスクトップショートカット＆遠隔ワンタップ起動連携:**
+   - Mac mini のデスクトップに `KaTrain_囲碁AI.command` ショートカットを配置済み。
+   - `projects/music-automation/bot.py`（`MacMagicBot` / `#mac-control`）に `katrain`（起動・最前面表示）および `katrain stop`（終了）コマンドを追加し、`launchd` を再起動して稼働済み。
+   - Galaxy Tab 側で「HTTP Request Shortcuts（`{"content": "katrain"}`）」＋「モードとルーチン（手動で開始）」を組み合わせることで、ホーム画面1タップで「Mac mini の KaTrain 起動＋Chrome リモートデスクトップ起動」を同時実行可能。

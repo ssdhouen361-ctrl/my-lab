@@ -55,7 +55,33 @@ Mac mini（Apple M6 / 16GB）の計算パワーを使って **19路盤の AI 対
 
 ---
 
-## 📱 Galaxy Tab から操作する手順（Chrome リモートデスクトップ）
+## 📱 Galaxy Tab から「1タップ」で Mac mini 接続＆KaTrain 自動起動する手順
+
+既存の `MacMagicBot`（`#mac-control`）に **`katrain`（起動）** / **`katrain stop`（終了）** コマンドを追加済みです！
+起床音楽の `MacWakeUp` と同じ仕組みを使って、**Galaxy Tab のホーム画面1タップで「Mac mini の KaTrain 起動 ＋ Chrome リモートデスクトップ起動」を同時に行う** ことができます。
+
+### ステップ1：Galaxy Tab に HTTP Request Shortcuts を設定する
+1. Galaxy Tab に **「HTTP Request Shortcuts」** アプリを入れる（スマホの `MacWakeUp` と同じアプリです）。
+2. 新しいショートカットを作成し、以下のように入力する：
+   - **名前：** `MacKaTrain`
+   - **メソッド：** `POST`
+   - **URL：** Discord `#mac-control` の Webhook URL（`MacWakeUp` と同じURL）
+   - **リクエストボディ（JSON）：** `{"content": "katrain"}`
+   - ※終了用（`MacKaTrain Stop`）も作りたい場合は `{"content": "katrain stop"}` で作れます。
+
+### ステップ2：Galaxy Tab の「モードとルーチン」で1タップ化！
+1. Galaxy Tab の **「設定」➔「モードとルーチン」➔「ルーチン」➔「＋」** を開く。
+2. **「いつ（条件）」：** **`手動で開始`** を選択。
+3. **「何をするか（実行）」：** 以下の2つを順番に追加する：
+   1. **アプリ ➔ アプリを開く / ショートカットを実行** から `HTTP Request Shortcuts` の **`MacKaTrain`** を選択（※Mac mini 側で KaTrain が自動起動します）
+   2. **アプリ ➔ アプリを開く** から **`Chrome リモートデスクトップ`** を選択
+4. ルーチンに名前（例：`囲碁AI 起動`）とアイコンを付けて保存し、**Galaxy Tab のホーム画面に「ルーチン」ウィジェット（1×1）を配置**すれば完成！
+
+👉 これだけで、外出先からホーム画面のアイコンを **1タップ** するだけで、Mac mini 側で KaTrain が立ち上がり、同時にタブレットにリモート接続画面が開きます！
+
+---
+
+## 📱 Galaxy Tab からの基本操作メモ（Chrome リモートデスクトップ）
 
 1. **Mac mini 側：** Chrome ブラウザで https://remotedesktop.google.com/access を開き、この Mac mini のリモートアクセスをオン（PIN設定）にする。
 2. **Galaxy Tab 側：** Google Play から **「Chrome リモートデスクトップ」** アプリを入れて同じ Google アカウントでログインし、Mac mini に接続する。

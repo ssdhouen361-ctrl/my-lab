@@ -14,6 +14,8 @@ PLAYLIST_NAME = os.getenv("PLAYLIST_NAME", "WakeUp")
 AUDIO_DEVICE_NAME = os.getenv("AUDIO_DEVICE_NAME", "Mac miniのスピーカー")
 WAKEUP_VOLUME = int(os.getenv("WAKEUP_VOLUME", "100"))
 SWITCH_AUDIO_BIN = "/opt/homebrew/bin/SwitchAudioSource"
+KATRAIN_BIN = "/Users/sasadayuto/my-lab/projects/katago-env/.venv/bin/katrain"
+KATRAIN_DIR = "/Users/sasadayuto/my-lab/projects/katago-env"
 
 # 起床アラーム起動前の状態を記憶しておく変数
 saved_audio_state: dict = {
@@ -322,6 +324,46 @@ async def on_message(message: discord.Message):
                 await message.channel.send(f"🔊 Macの音量を **{msg}** に変更しました。")
             else:
                 await message.channel.send(f"⚠️ 音量の変更に失敗しました: `{msg}`")
+
+    # ⑤ 囲碁AI（KaTrain / KataGo）起動コマンド: 「katrain」「katago」「囲碁」
+    elif lower_text in ("katrain", "katrain start", "katago", "katago start", "囲碁", "囲碁起動"):
+        print(f"⚫⚪ 「{raw_text}」を受信しました。KaTrain を起動します。")
+        if not os.path.exists(KATRAIN_BIN):
+            await message.channel.send("⚠️ KaTrain が見つかりません。セットアップ状況を確認してください。")
+            return
+        check = subprocess.run(["pgrep", "-f", KATRAIN_BIN], capture_output=True, text=True)
+        if check.returncode == 0 and check.stdout.strip():
+            # すでに起動中なら最前面に表示
+            subprocess.run(
+                [
+                    "osascript",
+                    "-e",
+                    'tell application "System Events" to set frontmost of (first process whose name contains "Python" or name contains "katrain") to true',
+                ],
+                capture_output=True,
+            )
+            await message.channel.send("⚫⚪ **KaTrain (KataGo)** はすでに起動中です！最前面に表示しました。")
+        else:
+            env = os.environ.copy()
+            env["PATH"] = f"/opt/homebrew/bin:/usr/local/bin:{env.get('PATH', '/usr/bin:/bin')}"
+            subprocess.Popen(
+                [KATRAIN_BIN],
+                cwd=KATRAIN_DIR,
+                env=env,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+            await message.channel.send("⚫⚪ Mac mini で **KaTrain (KataGo)** を起動しました！Chrome リモートデスクトップからそのまま対局・検討できます。")
+
+    # ⑥ 囲碁AI（KaTrain / KataGo）終了コマンド: 「katrain stop」「katago stop」「囲碁終了」
+    elif lower_text in ("katrain stop", "katago stop", "囲碁終了", "囲碁停止"):
+        print(f"⏹️ 「{raw_text}」を受信しました。KaTrain を終了します。")
+        res = subprocess.run(["pkill", "-f", KATRAIN_BIN], capture_output=True, text=True)
+        if res.returncode == 0:
+            await message.channel.send("⏹️ **KaTrain (KataGo)** を終了しました。")
+        else:
+            await message.channel.send("ℹ️ 現在 KaTrain は起動していません。")
 
 
 if __name__ == "__main__":
