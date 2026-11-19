@@ -363,7 +363,7 @@ async def on_message(message: discord.Message):
     if not raw_text and not message.attachments:
         return
 
-    lower_text = raw_text.lower()
+    lower_text = raw_text.replace("！", "!").replace("／", "/").lower()
     channel_key = str(message.channel.id)
 
     # 組み込みコマンド: !help
