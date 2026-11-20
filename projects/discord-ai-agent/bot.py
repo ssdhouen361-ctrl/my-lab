@@ -634,8 +634,8 @@ async def on_message(message: discord.Message):
         )
         return
 
-    # 組み込みコマンド: !jobs / ジョブ / 裏一覧
-    if lower_text in ("!jobs", "jobs", "ジョブ", "裏一覧"):
+    # 組み込みコマンド: !jobs / !job / ジョブ / 裏一覧
+    if lower_text in ("!jobs", "!job", "jobs", "job", "ジョブ", "裏一覧"):
         if not bg_jobs:
             saved_bg = load_bg_conversations()
             hint = (
