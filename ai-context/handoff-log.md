@@ -119,6 +119,6 @@
 - 将来別ツール（ZeroTier / Cloudflare Tunnel / NetBird 等）へ引っ越す可能性も見据え、今後載せるアプリは標準 HTTP 通信で非依存に設計する方針。
 
 ### 次のステップ候補（この土台の上に載せるもの）
-1. **スマホ・タブレット対応 Web 碁盤プロトタイプ**（Tailscale 経由で Mac mini の KataGo × Gemini 日本語解説を利用）
+1. **スマホ・タブレット対応 Web 碁盤（KataGo × Gemini）** — 設計構想書 [docs/web-goban-design.md](../docs/web-goban-design.md) を作成済み（未実装・構想フェーズ）。
 2. **自動化基盤（n8n 等）や Obsidian / ローカル音声文字起こし（mlx-whisper）** の導入・連携
 3. **社バスウィジェット v1.1.0 アップデート**（フォント拡大・時刻表スリム化・ルーチン連携）
