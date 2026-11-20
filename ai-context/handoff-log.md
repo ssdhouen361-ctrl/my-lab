@@ -104,3 +104,16 @@
    - Mac mini のデスクトップに `KaTrain_囲碁AI.command` ショートカットを配置済み。
    - `projects/music-automation/bot.py`（`MacMagicBot` / `#mac-control`）に `katrain`（起動・最前面表示）および `katrain stop`（終了）コマンドを追加し、`launchd` を再起動して稼働済み。
    - Galaxy Tab 側で「HTTP Request Shortcuts（`{"content": "katrain"}`）」＋「モードとルーチン（手動で開始）」を組み合わせることで、ホーム画面1タップで「Mac mini の KaTrain 起動＋Chrome リモートデスクトップ起動」を同時実行可能。
+
+---
+
+## 進行中プロジェクト: 3台連携ネットワーク基盤構築（Tailscale）
+
+- **環境プロファイル:** [ai-context/environment.md](environment.md)
+- **構築ガイド:** [docs/device-network-setup.md](../docs/device-network-setup.md)
+- **最終更新:** 2026-11-20
+
+### 方針・現在のステータス
+- 普段使いの3台（Mac mini・Galaxy S26 Ultra・Galaxy Tab）を連携させる基盤として、すでに S26 Ultra で利用可能な **Tailscale** を採用してまず「使える完成形」を作る方針で合意。
+- 将来別ツール（ZeroTier / Cloudflare Tunnel / NetBird 等）へ引っ越す可能性も見据え、今後載せるアプリは標準 HTTP 通信で非依存に設計する。
+- **次のタスク:** Mac mini と Galaxy Tab に Tailscale を導入し、3台間の Taildrop およびブラウザ接続テスト（ポート8888テスト等）を完了させる。完了後、スマホ対応 Web 碁盤（KataGo × Gemini 解説）や n8n 等の構築へ進む。
