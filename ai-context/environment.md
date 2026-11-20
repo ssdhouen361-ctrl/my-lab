@@ -15,7 +15,7 @@ AIアシスタントが提案・開発・自動化設計を行う際の前提と
   - モバイル指示・アイデア出し・日常メイン端末
   - Tailscale 導入・接続確認済み
   - 導入アプリ：Discord、HTTP Request Shortcuts、モードとルーチン、Good Lock（Home Up）、自作「社バスウィジェット」
-- **Galaxy Tab（Android）**
+- **Galaxy Tab S11（Android / Sペン対応）**
   - ドキュメント閲覧・囲碁検討などの大画面操作
   - Tailscale 導入・接続確認済み
   - 導入アプリ：Discord、Chrome リモートデスクトップ、HTTP Request Shortcuts、モードとルーチン
