@@ -29,10 +29,10 @@ AIアシスタントが提案・開発・自動化設計を行う際の前提と
 ## 2. 普段使っているアプリ・サービス
 
 ### Samsung 純正アプリ群
-- Samsung カレンダー
+- Samsung カレンダー（※メイン利用・Google カレンダーとは非連携）
 - Samsung メール
 - Samsung Health（ヘルスケア）
-- Samsung Notes（メモ・ノート）
+- Samsung Notes（メモ・ノート ※Galaxy 版 Gemini との純正連携を重視し、基本維持の方針）
 - Samsung ブラウザ（Samsung Internet）
 - Galaxy Wearable（ウェアラブル管理）
 
