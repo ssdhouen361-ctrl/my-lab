@@ -15,6 +15,7 @@ BASE_DIR = Path(__file__).resolve().parent
 REPO_DIR = Path(os.getenv("REPO_DIR", str(BASE_DIR.parent.parent))).resolve()
 CONVERSATIONS_FILE = BASE_DIR / ".conversations.json"
 BG_CONVERSATIONS_FILE = BASE_DIR / ".bg_conversations.json"
+MODEL_SETTINGS_FILE = BASE_DIR / ".model_settings.json"
 ATTACHMENTS_DIR = BASE_DIR / "attachments"
 
 # 1. 本プロジェクトの .env を読み込む
@@ -33,6 +34,11 @@ AGY_MODE = os.getenv("AGY_MODE", "accept-edits")
 AGY_TIMEOUT_SECONDS = int(os.getenv("AGY_TIMEOUT_SECONDS", "900"))
 AGY_BG_TIMEOUT_SECONDS = int(os.getenv("AGY_BG_TIMEOUT_SECONDS", "0"))  # 0 = 時間制限なし
 AGY_MAX_BG_JOBS = int(os.getenv("AGY_MAX_BG_JOBS", "5"))
+AGY_MAIN_MODEL_DEFAULT = os.getenv("AGY_MAIN_MODEL", "").strip()
+AGY_MAIN_EFFORT_DEFAULT = os.getenv("AGY_MAIN_EFFORT", "low").strip()
+AGY_BG_MODEL_DEFAULT = os.getenv("AGY_BG_MODEL", "").strip()
+AGY_BG_EFFORT_DEFAULT = os.getenv("AGY_BG_EFFORT", "high").strip()
+VALID_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 AUTO_GIT_PUSH = os.getenv("AUTO_GIT_PUSH", "true").lower() == "true"
 
 _raw_allowed_ids = os.getenv("DISCORD_ALLOWED_USER_IDS", "").strip()
@@ -148,6 +154,50 @@ def parse_bg_command(raw_text: str) -> Optional[tuple[Optional[int], str]]:
     if resume_match:
         return int(resume_match.group(1)), (resume_match.group(2) or "").strip()
     return None, rest
+
+
+def load_model_settings() -> dict[str, str]:
+    """表チャット・裏エージェントごとのモデル＆思考量(effort)設定を読み込む"""
+    defaults = {
+        "main_model": AGY_MAIN_MODEL_DEFAULT,
+        "main_effort": AGY_MAIN_EFFORT_DEFAULT,
+        "bg_model": AGY_BG_MODEL_DEFAULT,
+        "bg_effort": AGY_BG_EFFORT_DEFAULT,
+    }
+    if not MODEL_SETTINGS_FILE.exists():
+        return defaults
+    try:
+        saved = json.loads(MODEL_SETTINGS_FILE.read_text(encoding="utf-8"))
+        if isinstance(saved, dict):
+            for k in defaults:
+                if k in saved and isinstance(saved[k], str):
+                    defaults[k] = saved[k].strip()
+    except Exception:
+        pass
+    return defaults
+
+
+def save_model_settings(settings: dict[str, str]) -> None:
+    """表チャット・裏エージェントごとのモデル＆思考量設定を保存する"""
+    MODEL_SETTINGS_FILE.write_text(
+        json.dumps(settings, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+
+def format_model_profile(model: str, effort: str) -> str:
+    """モデル名と思考量の表示用ラベルを返す"""
+    m = model if model else "標準(default)"
+    e = effort if effort else "標準(default)"
+    return f"model=`{m}` / effort=`{e}`"
+
+
+def format_model_settings_summary(settings: Optional[dict[str, str]] = None) -> str:
+    """現在の表・裏モデル設定のサマリー文字列を返す"""
+    s = settings or load_model_settings()
+    main_label = format_model_profile(s["main_model"], s["main_effort"])
+    bg_label = format_model_profile(s["bg_model"], s["bg_effort"])
+    return f"- 💬 表チャット（普段の会話・音声）: {main_label}\n- 🚀 裏エージェント（`!bg` 開発・設計）: {bg_label}"
 
 
 def load_conversations() -> dict[str, str]:
@@ -292,6 +342,10 @@ async def run_agy_prompt(
         f"【ユーザーからの指示】\n{prompt}"
     )
 
+    settings = load_model_settings()
+    selected_model = settings["bg_model"] if bg_job is not None else settings["main_model"]
+    selected_effort = settings["bg_effort"] if bg_job is not None else settings["main_effort"]
+
     cmd = [
         AGY_BIN,
         "-p",
@@ -305,6 +359,10 @@ async def run_agy_prompt(
         "--print-timeout",
         f"{effective_timeout}s",
     ]
+    if selected_model:
+        cmd.extend(["--model", selected_model])
+    if selected_effort:
+        cmd.extend(["--effort", selected_effort])
     if conversation_id:
         cmd.extend(["--conversation", conversation_id])
 
@@ -585,12 +643,14 @@ async def execute_bg_job(
 async def on_ready():
     init_next_bg_job_id()
     bg_timeout_label = "無制限" if AGY_BG_TIMEOUT_SECONDS == 0 else f"{AGY_BG_TIMEOUT_SECONDS}秒"
+    ms = load_model_settings()
     print("==========================================")
     print(f"✅ Discord AIエージェント起動: {client.user}")
     print(f"👀 監視チャンネル: #{TARGET_CHANNEL}（およびそのスレッド）")
     print(f"📁 作業リポジトリ: {REPO_DIR}")
     print(f"🤖 実行コマンド: {AGY_BIN} (mode={AGY_MODE}, sandbox=True)")
-    print(f"🚀 裏エージェント: 最大{AGY_MAX_BG_JOBS}並列 / タイムアウト={bg_timeout_label}")
+    print(f"🧠 表チャット設定: {format_model_profile(ms['main_model'], ms['main_effort'])}")
+    print(f"🚀 裏エージェント: 最大{AGY_MAX_BG_JOBS}並列 / タイムアウト={bg_timeout_label} / {format_model_profile(ms['bg_model'], ms['bg_effort'])}")
     print(f"🔄 GitHub自動プッシュ: {'ON' if AUTO_GIT_PUSH else 'OFF'}")
     print("==========================================")
 
@@ -623,13 +683,145 @@ async def on_message(message: discord.Message):
             "- ファイルを作成・編集した場合は自動で GitHub (`origin/main`) にコミット＆プッシュします。\n"
             "- **`!bg <指示>`**（または `!裏 <指示>`）: **裏エージェント**を別プロセス＆時間制限なしで起動します（表チャットと同時並行OK・完了時に通知・音声添付もOK）。\n"
             "- **`!bg #<番号> <続きの指示>`** : 過去の裏エージェントの記憶を引き継いで続きを指示します。\n"
-            "- **`!jobs`**（または `ジョブ`）: 裏エージェントの稼働状況・経過時間を確認します。\n"
+            "- **`!jobs`**（または `!job` / `ジョブ`）: 裏エージェントの稼働状況・経過時間を確認します。\n"
             "- **`!stop`**（または `中断`）: 表チャットの作業を停止します。\n"
             "- **`!stop <番号>`** / **`!stop all`** : 指定した裏エージェント（または表＋裏すべて）を停止します。\n"
+            "- **`!models`**（または `モデル一覧`）: 利用可能なモデル一覧と現在の表/裏設定を表示します。\n"
+            "- **`!model [bg] <モデル名|default>`** / **`!effort [bg] <low|medium|high|xhigh|max|default>`** : 表チャット・裏エージェントそれぞれのモデルや思考量（速さ vs 丁寧さ）を切り替えます。\n"
             "- `!new` または `リセット` : このチャンネル（スレッド）の会話記憶をリセットします。\n"
-            "- `!status` : `agy`・裏ジョブ・リポジトリの状態を確認します。\n"
+            "- `!status` : `agy`・モデル設定・裏ジョブ・リポジトリの状態を確認します。\n"
             "- `!restart` または `再起動` : Bot自身を再起動して最新コードを反映します。\n"
             "- **スレッド機能** を使うと、話題ごとに別々の会話履歴を保てます！",
+            mention_author=False,
+        )
+        return
+
+    # 組み込みコマンド: !models / モデル一覧
+    if lower_text in ("!models", "モデル一覧", "モデル"):
+        env = os.environ.copy()
+        env["PATH"] = f"{Path(AGY_BIN).parent}:/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                AGY_BIN,
+                "models",
+                cwd=str(REPO_DIR),
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                env=env,
+            )
+            out_b, err_b = await asyncio.wait_for(proc.communicate(), timeout=20)
+            out_txt = out_b.decode("utf-8", errors="replace").strip()
+            err_txt = err_b.decode("utf-8", errors="replace").strip()
+            models_output = out_txt or err_txt or "(出力なし)"
+        except Exception as e:
+            models_output = f"取得失敗: {e}"
+
+        summary = format_model_settings_summary()
+        await send_long_reply(
+            message,
+            f"🧠 **現在のモデル・思考量設定**\n{summary}\n\n"
+            f"📋 **利用可能なモデル一覧 (`agy models`)**\n```\n{models_output[:1300]}\n```\n"
+            "💡 変更例:\n"
+            "- 表チャットを変更: `!model <モデル名>` / `!effort low`\n"
+            "- 裏エージェントを変更: `!model bg <モデル名>` / `!effort bg high`\n"
+            "- 初期設定に戻す: `!model reset`",
+        )
+        return
+
+    # 組み込みコマンド: !model [bg] <モデル名|default|reset>
+    norm_raw = ("!" + raw_text[1:]) if raw_text.startswith("！") else raw_text
+    model_cmd_match = re.match(r"^!model(?:\s+(.*))?$", norm_raw, flags=re.IGNORECASE)
+    if model_cmd_match:
+        arg = (model_cmd_match.group(1) or "").strip()
+        settings = load_model_settings()
+        if not arg:
+            await message.reply(
+                f"🧠 **現在のモデル・思考量設定**\n{format_model_settings_summary(settings)}\n\n"
+                "💡 使い方:\n"
+                "- 一覧を見る: `!models`\n"
+                "- 表チャットを変更: `!model <モデル名>`（標準に戻す: `!model default`）\n"
+                "- 裏エージェントを変更: `!model bg <モデル名>`（標準に戻す: `!model bg default`）\n"
+                "- すべて初期値へ: `!model reset`",
+                mention_author=False,
+            )
+            return
+
+        if arg.lower() == "reset":
+            defaults = {
+                "main_model": AGY_MAIN_MODEL_DEFAULT,
+                "main_effort": AGY_MAIN_EFFORT_DEFAULT,
+                "bg_model": AGY_BG_MODEL_DEFAULT,
+                "bg_effort": AGY_BG_EFFORT_DEFAULT,
+            }
+            save_model_settings(defaults)
+            await message.reply(
+                f"🔄 モデル・思考量設定を初期値へリセットしました！\n{format_model_settings_summary(defaults)}",
+                mention_author=False,
+            )
+            return
+
+        bg_sub = re.match(r"^(?:bg|裏)\s+(.+)$", arg, flags=re.IGNORECASE)
+        if bg_sub:
+            target_key = "bg_model"
+            target_label = "🚀 裏エージェント（`!bg`）"
+            new_val = bg_sub.group(1).strip()
+        else:
+            target_key = "main_model"
+            target_label = "💬 表チャット"
+            new_val = arg
+
+        if new_val.lower() in ("default", "標準", "none", "clear"):
+            new_val = ""
+        settings[target_key] = new_val
+        save_model_settings(settings)
+        await message.reply(
+            f"✅ {target_label} のモデルを **`{new_val or '標準(default)'}`** に変更しました！\n"
+            f"{format_model_settings_summary(settings)}",
+            mention_author=False,
+        )
+        return
+
+    # 組み込みコマンド: !effort [bg] <low|medium|high|xhigh|max|default>
+    effort_cmd_match = re.match(r"^!effort(?:\s+(.*))?$", norm_raw, flags=re.IGNORECASE)
+    if effort_cmd_match:
+        arg = (effort_cmd_match.group(1) or "").strip()
+        settings = load_model_settings()
+        if not arg:
+            await message.reply(
+                f"⚡ **現在の思考量（effort）設定**\n{format_model_settings_summary(settings)}\n\n"
+                f"指定できる値: `{'` / `'.join(VALID_EFFORTS)}` / `default`\n"
+                "- 表チャットを変更: `!effort low`（速さ重視） / `!effort high`（丁寧重視）\n"
+                "- 裏エージェントを変更: `!effort bg high` / `!effort bg xhigh`",
+                mention_author=False,
+            )
+            return
+
+        bg_sub = re.match(r"^(?:bg|裏)\s+(\S+)$", arg, flags=re.IGNORECASE)
+        if bg_sub:
+            target_key = "bg_effort"
+            target_label = "🚀 裏エージェント（`!bg`）"
+            val_lower = bg_sub.group(1).strip().lower()
+        else:
+            target_key = "main_effort"
+            target_label = "💬 表チャット"
+            val_lower = arg.strip().lower()
+
+        if val_lower in ("default", "標準", "none", "clear"):
+            new_effort = ""
+        elif val_lower in VALID_EFFORTS:
+            new_effort = val_lower
+        else:
+            await message.reply(
+                f"⚠️ 無効な値です: `{arg}`\n指定できる値: `{'` / `'.join(VALID_EFFORTS)}` / `default`",
+                mention_author=False,
+            )
+            return
+
+        settings[target_key] = new_effort
+        save_model_settings(settings)
+        await message.reply(
+            f"✅ {target_label} の思考量（effort）を **`{new_effort or '標準(default)'}`** に変更しました！\n"
+            f"{format_model_settings_summary(settings)}",
             mention_author=False,
         )
         return
@@ -767,8 +959,11 @@ async def on_message(message: discord.Message):
 
         timeout_label = "なし（完了までじっくり実行）" if AGY_BG_TIMEOUT_SECONDS == 0 else f"最大{AGY_BG_TIMEOUT_SECONDS}秒"
         mode_label = f"（#{job_id} の記憶を引き継ぎ）" if resume_id is not None else "（新規・独立セッション）"
+        ms = load_model_settings()
+        bg_profile = format_model_profile(ms["bg_model"], ms["bg_effort"])
         await message.reply(
             f"🚀 **裏エージェント #{job_id}** を起動しました！{mode_label}\n"
+            f"- 🧠 使用設定: {bg_profile}\n"
             f"- ⏱️ 時間制限: **{timeout_label}**\n"
             f"- 📊 現在の並列稼働: **{len(get_running_bg_jobs())} / {AGY_MAX_BG_JOBS}**\n"
             f"- 💬 表の `#{TARGET_CHANNEL}` はそのまま別の相談に使えます。完了したらここで通知します！\n"
@@ -826,7 +1021,8 @@ async def on_message(message: discord.Message):
         await message.reply(
             f"🖥️ **稼働ステータス**\n"
             f"- `agy`: `{agy_ver}`\n"
-            f"- 🚀 裏エージェント: {bg_line}\n"
+            f"{format_model_settings_summary()}\n"
+            f"- 🚀 裏エージェント稼働: {bg_line}\n"
             f"- Git状態:\n```\n{git_branch}\n```",
             mention_author=False,
         )

@@ -52,6 +52,9 @@
    - **汎用バックグラウンド専属エージェント機能（`!bg` / `!bg #<番号>` / `!jobs` / `!stop <番号|all>`）を実装（2026-11-21）**:
      - 表チャットと独立した非同期サブプロセスとして時間制限なし（`--print-timeout 0s`）・最大5並列で起動でき、完了時に自動で Git 反映＆Discord通知を行う汎用仕組みを追加（各裏エージェント内で複数サブエージェントによるチーム議論・審査統合も可能）。
      - 停止コマンドは `!stop`（表）・`!stop <番号>`（裏）・`!stop all`（全停止）に統合し、混同を防止。
+   - **表チャット／裏エージェントのモデル＆思考量（effort）使い分け機能を実装（2026-11-21）**:
+     - 初期値で表チャット=`effort: low`（高速応答）、裏エージェント=`effort: high`（高品質開発）へ自動分離。
+     - Discord 上から `!models`（`agy models` 実行）・`!model [bg] <name|default|reset>`・`!effort [bg] <low|medium|high|xhigh|max|default>` で自在に切替可能とし、`.model_settings.json`（`.gitignore` 追加済み）へ永続化。
      - 表・裏同時実行時の Git 競合を防ぐ専用 `_git_lock` と、裏ジョブ継続用の `.bg_conversations.json`（`.gitignore` 追加済み）を実装。
 
 ### 現在のステータス・次のタスク

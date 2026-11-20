@@ -19,6 +19,7 @@ venv/
 gha-creds-*.json
 .conversations.json
 .bg_conversations.json
+.model_settings.json
 projects/discord-ai-agent/attachments/
 
 # KataGo neural network model weights (大容量のためGit管理対象外)
