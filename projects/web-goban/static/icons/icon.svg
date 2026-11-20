@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="wood" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#DEB26C"/>
+      <stop offset="100%" stop-color="#BA8B47"/>
+    </linearGradient>
+    <radialGradient id="blackStone" cx="35%" cy="32%" r="65%">
+      <stop offset="0%" stop-color="#525B66"/>
+      <stop offset="55%" stop-color="#1A1E24"/>
+      <stop offset="100%" stop-color="#090B0E"/>
+    </radialGradient>
+    <radialGradient id="whiteStone" cx="35%" cy="30%" r="68%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="70%" stop-color="#EAE6DD"/>
+      <stop offset="100%" stop-color="#C6C0B4"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="#1A1D21"/>
+  <rect x="64" y="64" width="384" height="384" rx="28" fill="url(#wood)" stroke="#8B632E" stroke-width="6"/>
+  <g stroke="#2C2115" stroke-width="5" stroke-opacity="0.78">
+    <line x1="128" y1="128" x2="384" y2="128"/>
+    <line x1="128" y1="256" x2="384" y2="256"/>
+    <line x1="128" y1="384" x2="384" y2="384"/>
+    <line x1="128" y1="128" x2="128" y2="384"/>
+    <line x1="256" y1="128" x2="256" y2="384"/>
+    <line x1="384" y1="128" x2="384" y2="384"/>
+  </g>
+  <circle cx="256" cy="256" r="10" fill="#2C2115"/>
+  <circle cx="192" cy="192" r="54" fill="#000000" fill-opacity="0.28" transform="translate(5,7)"/>
+  <circle cx="192" cy="192" r="54" fill="url(#blackStone)"/>
+  <circle cx="320" cy="320" r="54" fill="#000000" fill-opacity="0.28" transform="translate(5,7)"/>
+  <circle cx="320" cy="320" r="54" fill="url(#whiteStone)" stroke="#786E60" stroke-width="3"/>
+  <circle cx="320" cy="192" r="46" fill="#1565C0" fill-opacity="0.92" stroke="#93C5FD" stroke-width="5"/>
+  <circle cx="320" cy="192" r="36" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+</svg>

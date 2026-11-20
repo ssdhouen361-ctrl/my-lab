@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WebGobanVisualQAReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "overall_status",
+    "fail_count",
+    "images",
+    "summary"
+  ],
+  "properties": {
+    "overall_status": {
+      "type": "string",
+      "enum": ["PASS", "WARN", "FAIL"],
+      "description": "Overall verdict across all 10 screenshots. Must be FAIL if fail_count > 0."
+    },
+    "fail_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Exact number of images whose status is FAIL."
+    },
+    "images": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "filename",
+          "status",
+          "scores",
+          "issues",
+          "fix_suggestion"
+        ],
+        "properties": {
+          "filename": {
+            "type": "string",
+            "enum": [
+              "01_s26_review_idle.png",
+              "02_s26_ghost_drag.png",
+              "03_s26_spen_pv_heatmap.png",
+              "04_s26_sheet_half_pv.png",
+              "05_s26_sheet_full_coach.png",
+              "06_s26_hint_and_banner.png",
+              "07_tab_2col_review.png",
+              "08_tab_spen_pv_heatmap.png",
+              "09_tab_coach_report.png",
+              "10_s26_narrow_9x9.png"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": ["PASS", "WARN", "FAIL"]
+          },
+          "scores": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "board_geometry",
+              "coordinates_margin",
+              "candidate_readability_cud",
+              "ghost_reticle_pv",
+              "layout_alignment",
+              "japanese_text_contrast",
+              "graph_heatmap_badges",
+              "dark_theme_aesthetics"
+            ],
+            "properties": {
+              "board_geometry": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "coordinates_margin": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "candidate_readability_cud": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "ghost_reticle_pv": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "layout_alignment": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "japanese_text_contrast": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "graph_heatmap_badges": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "dark_theme_aesthetics": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              }
+            }
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "fix_suggestion": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "string"
+    }
+  }
+}

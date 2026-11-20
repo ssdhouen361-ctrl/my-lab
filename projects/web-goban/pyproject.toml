@@ -1,0 +1,9 @@
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+pythonpath = ["."]
+testpaths = ["tests"]
+markers = [
+    "katago_live: real KataGo Metal GPU smoke test",
+    "e2e: Playwright virtual device E2E test",
+    "visual_qa: Layer 3 screenshot & AI visual QA test",
+]

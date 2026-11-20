@@ -22,7 +22,7 @@ AI支援による実験的開発やプログラミングの記録用リポジト
   Mac mini（Apple M6）上で KataGo と定番ソフト KaTrain を動かし、Galaxy Tab からも19路盤の対局・検討を行う環境。
 - **[3台連携ネットワーク基盤（Tailscale）](docs/device-network-setup.md)**  
   Mac mini・Galaxy S26 Ultra・Galaxy Tab の3台を安全・高速に直結し、スマホ用Webツールやファイル共有の土台にする環境（稼働中）。
-- **[スマホ・タブレット対応 Web 碁盤（KataGo × Gemini）](docs/web-goban-design.md)** *(設計・構想中)*  
-  スマホ／タブレットのブラウザで快適に操作し、思考は Mac mini の KataGo、日本語解説は Gemini に任せる自分専用 Web 碁盤の設計構想。
+- **[スマホ・タブレット対応 Web 碁盤（KataGo × Gemini）](projects/web-goban/README.md)** *(Phase 1 実装済み)*  
+  Galaxy S26 Ultra / Tab S11 のブラウザ（PWA）で指＆Sペン操作し、思考は Mac mini の KataGo、解説は Gemini に任せる自分専用 Web 碁盤（設計書：[docs/web-goban-design.md](docs/web-goban-design.md)）。
 - **[スマホ連動 GitHub Issue AIエージェント](projects/github-issue-agent/README.md)** *(検証・保留)*  
   GitHub Issues に `@gemini-cli` と書き込むクラウド版ワークフロー（無料枠APIキーの1日20回制限により現在はDiscord版へ移行）。

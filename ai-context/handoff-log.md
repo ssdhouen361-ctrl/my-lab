@@ -126,6 +126,41 @@
 - 将来別ツール（ZeroTier / Cloudflare Tunnel / NetBird 等）へ引っ越す可能性も見据え、今後載せるアプリは標準 HTTP 通信で非依存に設計する方針。
 
 ### 次のステップ候補（この土台の上に載せるもの）
-1. **スマホ・タブレット対応 Web 碁盤（KataGo × Gemini）** — 設計構想書 [docs/web-goban-design.md](../docs/web-goban-design.md) を作成済み（未実装・構想フェーズ）。
-2. **自動化基盤（n8n 等）や Obsidian / ローカル音声文字起こし（mlx-whisper）** の導入・連携
-3. **社バスウィジェット v1.1.0 アップデート**（フォント拡大・時刻表スリム化・ルーチン連携）
+1. **自動化基盤（n8n 等）や Obsidian / ローカル音声文字起こし（mlx-whisper）** の導入・連携
+2. **社バスウィジェット v1.1.0 アップデート**（フォント拡大・時刻表スリム化・ルーチン連携）
+
+---
+
+## 進行中プロジェクト（Phase 1 実装完了）: スマホ・タブレット対応 Web 碁盤 (`web-goban`)
+
+- **統合設計書:** [docs/web-goban-design.md](../docs/web-goban-design.md)
+- **手順書:** [projects/web-goban/README.md](../projects/web-goban/README.md)
+- **バックエンド本体:** [projects/web-goban/app/main.py](../projects/web-goban/app/main.py)
+- **フロントエンド本体:** [projects/web-goban/static/index.html](../projects/web-goban/static/index.html)
+- **KataGo 設定:** [projects/web-goban/config/katago_analysis.cfg](../projects/web-goban/config/katago_analysis.cfg)
+- **セットアップ＆QA スクリプト:** [projects/web-goban/scripts/setup.sh](../projects/web-goban/scripts/setup.sh) / [projects/web-goban/scripts/qa.sh](../projects/web-goban/scripts/qa.sh)
+- **常駐設定テンプレート:** [projects/web-goban/com.mylab.web-goban.plist](../projects/web-goban/com.mylab.web-goban.plist)
+- **最終更新:** 2026-11-21
+
+### 実装・検証済みの内容（Phase 1：Step 1-A / Step 1-B / Layer 1〜3 QA 基盤）
+1. **Step 1-A（バックエンド土台）:**
+   - Apple M6 / 16GB・KaTrain 共存向け `config/katago_analysis.cfg`（実機 KataGo v1.18.2 で全 23 パラメータ警告ゼロ読込・GPU-only MPSGraph 認識を確認済み）。
+   - 単一ソースの座標変換（`coords.py`：9/13/19 路・`I` 除外・圧縮矩形・パス正規化）、囲碁ルール＆非再帰 SGF パーサ／原子的置換保存（`rules.py`：自殺手・単コウ・多子打ち上げ・置き石 `komi=0.5`/`W` 先手・CP932/GB18030/破損耐性・7 要素 `position_hash`）。
+   - SQLite WAL 永続化（`db.py`：直列書込・`analysis_cache` 高 visits 保護）、KataGo NDJSON 管理（`katago_engine.py`：8MB `stdout` 上限・`stderr` 常時ドレイン・2 段ハンドシェイク・3 段キャンセル・`terminated_ids` キャッシュ非汚染・4 手チャンク一括検討と対話割り込み即時 `PAUSED_FOR_INTERACTIVE`・KaTrain 同時稼働検知とアイドル 15 分→3 分短縮・AI 強さ Softmax 温度選択）。
+   - 複数端末 WebSocket 同期（`game_hub.py`：`expected_version` 楽観ロック・端末ローカル `navigate` 分離・45 秒ゾンビ掃除）および厳密 Origin 検証付き FastAPI（`main.py`）。
+2. **Step 1-B（フロントエンド UX＆無痛移行土台）:**
+   - ビルド不要の Vanilla HTML / CSS / ES Modules 構成（`#1A1D21` ダークテーマ統一・`--app-inset-*` 安全領域統一・盤面レイアウトシフト `0.0px`・全ボタン `>= 44×44px`＆間隔保証）。
+   - 2 層 Canvas 盤面（`goban-canvas.js`：非整数 DPR 物理ピクセルスナップ・9/13/19 路・CUD 色＋枠形状候補手・半透明 PV 石・地合いヒートマップ＆死活 `×`・Lv3 ヒント枠）。
+   - 3 モードレスポンシブ（S26 Ultra 縦＋自動縮退する可変ミニ情報帯＆2 段ボトムシート／Tab S11 縦常設パネル／Tab S11 横フルハイト正方形盤面＋右統合パネル・左利き反転可）。
+   - `PointerEvent` 状態機械（`input-controller.js`：初回 0px 仮置き→移動 >8px で上 `52px` イージング＆上端 5 路 Smoothstep 減衰・2 本指ピンチ 2.5x＆`200ms` ガード・Sペン Air View ホバー 80/50ms＆0ms 即消去＆`350ms`＋大面積パームリジェクション）。
+   - `PlatformBridge`（`platform-bridge.js`：`window.WebGobanNative` / `window.WebGobanApp` 契約・WebView 時は SW 自動スキップ）と 15s/5s Heartbeat 対応 `ws-client.js`・SVG 勝率/目数グラフ・日本語囲碁 TTS 整形。
+3. **Layer 1〜3 仮想自動試験基盤＋運用スクリプト:**
+   - 本番完全隔離（`tmp_path`・エフェメラルポート・OS パイプ型 `FakeKataGoSubprocess`）の Layer 1 pytest スイート、Layer 2 Playwright 6 仮想端末＆7 大品質ゲート、Layer 3 厳選 10 枚決定論的スクショ撮影＆リポジトリ外隔離 `agy` CLI 8 項目ルーブリック審査スクリプト、`setup.sh` / `qa.sh` / `com.mylab.web-goban.plist` を整備。
+   - サンドボックス内で実行可能な全検証（Layer 1 純 Python スイート 35/35 全 PASS・Node.js JS 構文＆入力数学テスト全 PASS・`katago_analysis.cfg` 実機パース確認・`bash -n`・`plutil -lint`・JSON/XML 検証）を通過済み。
+
+### 次のタスク（ユーザー操作＆Phase 1-C / Phase 2）
+1. **Mac mini ターミナルで初回環境構築＆全層 QA 実行（ネットワーク・Metal GPU 解放環境）:**
+   - `cd ~/my-lab/projects/web-goban && ./scripts/setup.sh && ./scripts/qa.sh all`
+   - 実機 KataGo スモークも確認する場合：`./scripts/qa.sh live`
+2. **Step 1-C（常駐＆HTTPS PWA 化＋実機 5 分確認）:** `launchd` 登録・`tailscale serve --bg http://127.0.0.1:8090`・Galaxy S26 Ultra / Tab S11 で実機チェック。
+3. **Phase 2（Gemini AI 囲碁コーチ実装）:** `GoFactBridge`・統一 `is_garbage_time`・`CoachProvider`（隔離 `agy` CLI ＋ `--json-schema` ＋ 4 層ハルシネーション防御）の実装。

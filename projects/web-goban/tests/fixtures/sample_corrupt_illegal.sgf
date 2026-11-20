@@ -1,0 +1,8 @@
+(;GM[1]FF[4]CA[UTF-8]SZ[19]KM[6.5]RU[Japanese]
+GN[破損・非法手テスト棋譜]PB[黒]PW[白]
+;B[pd]
+;W[dd]
+;B[pp]
+;W[pd]C[非法手：既に黒石があるpd(Q16)へ着手]
+;B[dp]
+;W[zz])TRAILING_GARBAGE_BYTES_IGNORED

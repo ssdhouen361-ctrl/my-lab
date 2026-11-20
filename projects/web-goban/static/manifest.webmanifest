@@ -1,0 +1,25 @@
+{
+  "name": "Web 碁盤 (KataGo × Gemini)",
+  "short_name": "Web碁盤",
+  "description": "スマホ・タブレット対応 Web 碁盤（KataGo 解析 × Gemini コーチ）",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1A1D21",
+  "theme_color": "#1A1D21",
+  "icons": [
+    {
+      "src": "/static/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

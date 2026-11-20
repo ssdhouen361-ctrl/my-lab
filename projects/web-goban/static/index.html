@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1A1D21">
+  <meta name="color-scheme" content="dark">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Web 碁盤 (KataGo × Gemini)</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+  <style>
+    /* Critical no-flash dark boot backdrop */
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #1A1D21;
+      color: #E8EDF2;
+      overflow: hidden;
+      overscroll-behavior: none;
+    }
+  </style>
+  <link rel="stylesheet" href="/static/css/app.css?v=__BUILD_ID__">
+</head>
+<body>
+  <div id="app" data-layout="mobile-portrait">
+    <!-- [1] Mobile Top Status Bar (44px fixed) -->
+    <header id="top-bar" data-testid="top-bar">
+      <div class="top-status-left">
+        <span id="conn-dot" class="conn-dot is-connecting" aria-label="接続状態"></span>
+        <span id="top-move-text" class="move-text">0手目(黒番)</span>
+        <div id="top-winrate-bar" class="winrate-bar" aria-label="勝率バー">
+          <div id="top-winrate-fill" class="winrate-fill" style="width: 50%;"></div>
+        </div>
+        <span id="top-score-text" class="score-text">互角</span>
+      </div>
+      <button id="btn-settings" class="icon-btn" type="button" aria-label="設定・メニュー" data-testid="btn-settings">⚙</button>
+    </header>
+
+    <!-- [2] Board Column & 2-Layer Canvas Stage -->
+    <main id="board-column" data-testid="board-column">
+      <div id="board-stage" data-testid="board-stage">
+        <canvas id="goban-static" data-testid="goban-static"></canvas>
+        <canvas id="goban-dynamic" data-testid="goban-dynamic"></canvas>
+
+        <!-- Zero-layout-shift overlays inside board stage -->
+        <div id="connection-banner" class="board-banner is-warn" role="status" hidden data-testid="connection-banner">
+          <span id="connection-banner-text">⚠️ サーバーへ再接続中…</span>
+        </div>
+
+        <div class="board-overlay-pills">
+          <div id="branch-pill" class="board-pill" hidden data-testid="branch-pill">
+            <span id="branch-pill-text" class="board-pill-label">🌿分岐 +1手</span>
+            <button id="btn-return-main" class="pill-action-btn" type="button" data-board-overlay-control data-testid="btn-return-main">本譜へ</button>
+          </div>
+          <div id="zoom-pill" class="board-pill is-right" hidden data-testid="zoom-pill">
+            <button id="btn-zoom-reset" class="pill-action-btn" type="button" data-board-overlay-control data-testid="btn-zoom-reset">🔍100%</button>
+          </div>
+        </div>
+
+        <div id="external-katago-banner" class="board-banner is-bottom is-info" role="status" hidden data-testid="external-katago-banner">
+          <span id="external-katago-banner-text">外部 KataGo (KaTrain等) を検知中 — 自動起動を抑制中</span>
+        </div>
+      </div>
+    </main>
+
+    <!-- [2b] Mobile Variable Mini Info Strip (auto-hidden when height <= 750px) -->
+    <section id="mini-info-strip" aria-label="ミニ形勢情報" data-testid="mini-info-strip">
+      <button id="btn-mini-sparkline" class="mini-sparkline-btn" type="button" data-testid="btn-mini-sparkline">
+        <div class="mini-sparkline-header">
+          <span class="mini-sparkline-title">勝率推移</span>
+          <span id="mini-sparkline-wr" class="mini-sparkline-val">黒 50.0%</span>
+          <span class="mini-sparkline-hint">詳細 ›</span>
+        </div>
+        <svg id="mini-sparkline-svg" class="mini-sparkline-svg" viewBox="0 0 320 26" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </button>
+      <div id="mini-cand-row" class="mini-cand-row" data-testid="mini-cand-row"></div>
+      <div id="mini-meta-row" class="mini-meta-row">
+        <span id="mini-captures-text" class="mini-captures-text">アゲハマ 黒:0 白:0 ・ コミ 6.5</span>
+        <span id="mini-flash-note" class="mini-flash-note" hidden></span>
+      </div>
+    </section>
+
+    <!-- [3] Mobile State-Linked Fixed Action Bar (52px strict fixed height) -->
+    <section id="action-bar" aria-label="操作バー" data-testid="action-bar">
+      <div id="action-bar-normal" class="action-bar-pane">
+        <div id="action-normal-text" class="action-summary-text">盤面タップで仮置き・ドラッグで微調整</div>
+        <div id="action-review-controls" class="action-inline-group">
+          <button id="btn-heatmap-mobile" class="compact-toggle-btn" type="button" aria-pressed="false" data-testid="btn-heatmap-mobile">🗺地合い</button>
+        </div>
+        <div id="action-play-controls" class="action-inline-group" hidden>
+          <button id="btn-play-pass" class="compact-action-btn" type="button" data-testid="btn-play-pass">パス</button>
+          <button id="btn-play-undo" class="compact-action-btn" type="button" data-testid="btn-play-undo">待った</button>
+          <button id="btn-play-resign" class="compact-action-btn is-danger" type="button" data-testid="btn-play-resign">投了</button>
+        </div>
+      </div>
+
+      <div id="action-bar-hover" class="action-bar-pane is-hover" hidden>
+        <div id="action-hover-text" class="action-hover-text">👁 照準</div>
+      </div>
+
+      <div id="action-bar-ghost" class="action-bar-pane is-ghost" hidden>
+        <span id="ghost-label" class="ghost-label" data-testid="ghost-label">黒 Q14</span>
+        <div class="ghost-btn-group">
+          <button id="btn-ghost-cancel" class="btn-ghost-cancel" type="button" data-testid="btn-ghost-cancel">✕ 取消</button>
+          <button id="btn-ghost-confirm" class="btn-ghost-confirm" type="button" data-testid="btn-ghost-confirm">✓ 着手確定</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- [4] Mobile Bottom Toolbar (56px + safe-area-bottom) -->
+    <nav id="bottom-toolbar" aria-label="メインツールバー" data-testid="bottom-toolbar">
+      <button id="btn-prev" class="toolbar-btn" type="button" data-testid="btn-prev">
+        <span class="tb-icon">◀</span>
+        <span class="tb-label">戻る</span>
+      </button>
+      <button id="btn-next" class="toolbar-btn" type="button" data-testid="btn-next">
+        <span class="tb-icon">▶</span>
+        <span class="tb-label">進む</span>
+      </button>
+      <button id="btn-toggle-analyze" class="toolbar-btn is-active" type="button" aria-pressed="true" data-testid="btn-toggle-analyze">
+        <span id="analyze-btn-icon" class="tb-icon">✨</span>
+        <span id="analyze-btn-label" class="tb-label">検討ON</span>
+      </button>
+      <button id="btn-open-sheet" class="toolbar-btn" type="button" data-testid="btn-open-sheet">
+        <span class="tb-icon">📊</span>
+        <span class="tb-label">詳細</span>
+      </button>
+      <button id="btn-menu" class="toolbar-btn" type="button" data-testid="btn-menu">
+        <span class="tb-icon">☰</span>
+        <span class="tb-label">Menu</span>
+      </button>
+    </nav>
+
+    <!-- [Tablet] Permanent Integrated Side Panel (Landscape right / Portrait bottom) -->
+    <aside id="side-panel" aria-label="解析・操作パネル" data-testid="side-panel">
+      <!-- [R1] Side Header (44px) -->
+      <div id="side-header" data-testid="side-header">
+        <span id="side-conn-dot" class="conn-dot is-connecting" aria-label="接続状態"></span>
+        <span id="side-move-text" class="move-text">0手目(黒番)</span>
+        <div id="side-winrate-bar" class="winrate-bar" aria-label="勝率バー">
+          <div id="side-winrate-fill" class="winrate-fill" style="width: 50%;"></div>
+        </div>
+        <span id="side-score-text" class="score-text">互角</span>
+        <button id="btn-side-menu" class="icon-btn" type="button" aria-label="メニュー" data-testid="btn-side-menu">☰</button>
+      </div>
+
+      <!-- [R2] Eval Graph (156px) -->
+      <div id="side-graph-wrap" data-testid="side-graph-wrap">
+        <div class="graph-toolbar">
+          <span id="side-graph-meta" class="graph-meta-text">黒アゲ:0 白アゲ:0 ・ コミ6.5</span>
+          <div class="graph-toolbar-btns">
+            <button id="btn-graph-mode-side" class="compact-toggle-btn" type="button" data-testid="btn-graph-mode-side">勝率</button>
+            <button id="btn-heatmap-side" class="compact-toggle-btn" type="button" aria-pressed="false" data-testid="btn-heatmap-side">🗺地合い</button>
+          </div>
+        </div>
+        <svg id="eval-graph-svg" class="eval-graph-svg" viewBox="0 0 460 110" preserveAspectRatio="none" role="img" aria-label="勝率・目数推移グラフ" data-testid="eval-graph-svg"></svg>
+      </div>
+
+      <!-- [R3] Side Tabs (48px) -->
+      <div id="side-tabs" role="tablist" data-testid="side-tabs">
+        <button class="panel-tab is-active" type="button" role="tab" aria-selected="true" data-side-tab="candidates" data-testid="side-tab-candidates">候補手</button>
+        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-side-tab="coach" data-testid="side-tab-coach">🤖Gemini</button>
+        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-side-tab="game" data-testid="side-tab-game">対局・分岐</button>
+      </div>
+
+      <!-- [R4] Side Scroll Content (flex: 1) -->
+      <div id="side-scroll" data-testid="side-scroll">
+        <div id="side-pane-candidates" class="panel-pane"></div>
+        <div id="side-pane-coach" class="panel-pane" hidden></div>
+        <div id="side-pane-game" class="panel-pane" hidden></div>
+      </div>
+
+      <!-- [R5] Side State-Linked Action Bar (48px strict fixed height) -->
+      <div id="side-action-bar" data-testid="side-action-bar">
+        <div id="side-action-normal" class="action-bar-pane">
+          <div id="side-action-text" class="action-summary-text">Sペン直接着手 / 指タップ仮置き</div>
+          <div id="side-play-controls" class="action-inline-group" hidden>
+            <button id="btn-side-pass" class="compact-action-btn" type="button" data-testid="btn-side-pass">パス</button>
+            <button id="btn-side-undo" class="compact-action-btn" type="button" data-testid="btn-side-undo">待った</button>
+            <button id="btn-side-resign" class="compact-action-btn is-danger" type="button" data-testid="btn-side-resign">投了</button>
+          </div>
+        </div>
+
+        <div id="side-action-hover" class="action-bar-pane is-hover" hidden>
+          <div id="side-hover-text" class="action-hover-text">👁 照準</div>
+        </div>
+
+        <div id="side-action-ghost" class="action-bar-pane is-ghost" hidden>
+          <span id="side-ghost-label" class="ghost-label" data-testid="side-ghost-label">黒 Q14</span>
+          <div class="ghost-btn-group">
+            <button id="btn-side-ghost-cancel" class="btn-ghost-cancel" type="button" data-testid="btn-side-ghost-cancel">✕ 取消</button>
+            <button id="btn-side-ghost-confirm" class="btn-ghost-confirm" type="button" data-testid="btn-side-ghost-confirm">✓ 着手確定</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- [R6] Side Navigation Footer (56px) -->
+      <div id="side-footer" data-testid="side-footer">
+        <button id="btn-side-start" class="side-nav-btn" type="button" aria-label="初手へ" data-testid="btn-side-start">|◀</button>
+        <button id="btn-side-back5" class="side-nav-btn" type="button" aria-label="5手戻る" data-testid="btn-side-back5">◀◀</button>
+        <button id="btn-side-prev" class="side-nav-btn" type="button" aria-label="1手戻る" data-testid="btn-side-prev">◀</button>
+        <button id="btn-side-next" class="side-nav-btn" type="button" aria-label="1手進む" data-testid="btn-side-next">▶</button>
+        <button id="btn-side-fwd5" class="side-nav-btn" type="button" aria-label="5手進む" data-testid="btn-side-fwd5">▶▶</button>
+        <button id="btn-side-end" class="side-nav-btn" type="button" aria-label="最終手へ" data-testid="btn-side-end">▶|</button>
+        <button id="btn-side-analyze" class="side-analyze-btn is-active" type="button" aria-pressed="true" data-testid="btn-side-analyze">✨検討</button>
+      </div>
+    </aside>
+
+    <!-- [5] Mobile Expandable Bottom Sheet (closed / half 52dvh / full 84dvh) -->
+    <section id="bottom-sheet" data-snap="closed" aria-label="詳細解析シート" data-testid="bottom-sheet">
+      <div id="sheet-handle" data-testid="sheet-handle">
+        <span id="sheet-title" class="sheet-title">解析・詳細</span>
+        <div class="sheet-drag-pill" aria-hidden="true"></div>
+        <div class="sheet-handle-actions">
+          <button id="btn-sheet-expand" class="icon-btn" type="button" aria-label="全画面切替" data-testid="btn-sheet-expand">⤢</button>
+          <button id="btn-sheet-close" class="icon-btn" type="button" aria-label="閉じる" data-testid="btn-sheet-close">✕</button>
+        </div>
+      </div>
+
+      <div id="sheet-tabs" role="tablist" data-testid="sheet-tabs">
+        <button class="panel-tab is-active" type="button" role="tab" aria-selected="true" data-sheet-tab="candidates" data-testid="sheet-tab-candidates">候補手</button>
+        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="graph" data-testid="sheet-tab-graph">グラフ</button>
+        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="coach" data-testid="sheet-tab-coach">🤖Gemini</button>
+        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="branches" data-testid="sheet-tab-branches">分岐</button>
+      </div>
+
+      <div id="sheet-body" data-testid="sheet-body">
+        <div id="sheet-pane-candidates" class="panel-pane"></div>
+        <div id="sheet-pane-graph" class="panel-pane" hidden>
+          <div class="graph-toolbar">
+            <span id="sheet-graph-meta" class="graph-meta-text">勝率・目数推移（タップで移動）</span>
+            <div class="graph-toolbar-btns">
+              <button id="btn-graph-mode-sheet" class="compact-toggle-btn" type="button" data-testid="btn-graph-mode-sheet">勝率</button>
+              <button id="btn-heatmap-sheet" class="compact-toggle-btn" type="button" aria-pressed="false" data-testid="btn-heatmap-sheet">🗺地合い</button>
+            </div>
+          </div>
+          <svg id="sheet-eval-graph-svg" class="eval-graph-svg is-tall" viewBox="0 0 360 150" preserveAspectRatio="none" role="img" aria-label="評価推移グラフ"></svg>
+          <div id="sheet-graph-legend" class="graph-legend">
+            <span class="legend-item"><span class="badge-dot is-blunder"></span>大悪手</span>
+            <span class="legend-item"><span class="badge-dot is-mistake"></span>悪手</span>
+            <span class="legend-item"><span class="badge-dot is-inaccuracy"></span>疑問手</span>
+            <span class="legend-item"><span class="badge-dot is-good"></span>好手</span>
+          </div>
+        </div>
+        <div id="sheet-pane-coach" class="panel-pane" hidden></div>
+        <div id="sheet-pane-branches" class="panel-pane" hidden></div>
+      </div>
+    </section>
+
+    <!-- Menu / Settings Modal -->
+    <div id="menu-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-label="設定・対局メニュー" data-testid="menu-modal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">対局・棋譜・設定</h2>
+          <button id="btn-menu-close" class="icon-btn" type="button" aria-label="閉じる" data-testid="btn-menu-close">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- New Game Section -->
+          <section class="modal-section">
+            <h3 class="modal-section-title">新規対局 / 検討</h3>
+            <div class="form-grid">
+              <label class="form-field">
+                <span>盤サイズ</span>
+                <select id="sel-board-size">
+                  <option value="19" selected>19路盤</option>
+                  <option value="13">13路盤</option>
+                  <option value="9">9路盤</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>モード</span>
+                <select id="sel-game-mode">
+                  <option value="review" selected>検討モード</option>
+                  <option value="play">AI対局モード</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>置き石</span>
+                <select id="sel-handicap">
+                  <option value="0" selected>互先 (0)</option>
+                  <option value="2">2子</option>
+                  <option value="3">3子</option>
+                  <option value="4">4子</option>
+                  <option value="5">5子</option>
+                  <option value="6">6子</option>
+                  <option value="9">9子</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>コミ</span>
+                <input id="input-komi" type="number" step="0.5" value="6.5">
+              </label>
+              <label class="form-field">
+                <span>AI強さ</span>
+                <select id="sel-ai-level">
+                  <option value="15k">15級</option>
+                  <option value="10k">10級</option>
+                  <option value="5k" selected>5級</option>
+                  <option value="1d">初段</option>
+                  <option value="5d">五段</option>
+                  <option value="max">全力</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>手番(対局時)</span>
+                <select id="sel-human-color">
+                  <option value="B" selected>黒番</option>
+                  <option value="W">白番</option>
+                </select>
+              </label>
+            </div>
+            <div class="modal-btn-row">
+              <button id="btn-new-game" class="primary-btn" type="button" data-testid="btn-new-game">新規対局を開始</button>
+            </div>
+          </section>
+
+          <!-- SGF Import / Export -->
+          <section class="modal-section">
+            <h3 class="modal-section-title">SGF 棋譜 入出力</h3>
+            <div class="modal-btn-row">
+              <label class="secondary-btn file-label-btn" for="input-sgf-file">📂 SGFファイル読込</label>
+              <input id="input-sgf-file" type="file" accept=".sgf,text/plain" hidden>
+              <button id="btn-export-sgf" class="secondary-btn" type="button" data-testid="btn-export-sgf">⬇ SGF保存/共有</button>
+              <button id="btn-copy-sgf" class="secondary-btn" type="button" data-testid="btn-copy-sgf">📋 コピー</button>
+            </div>
+            <textarea id="input-sgf-text" class="sgf-textarea" rows="3" placeholder="(;GM[1]FF[4]SZ[19];B[pd];W[dd]) を貼り付け…"></textarea>
+            <div class="modal-btn-row">
+              <button id="btn-import-sgf-text" class="secondary-btn" type="button" data-testid="btn-import-sgf-text">SGFテキストを読み込む</button>
+            </div>
+          </section>
+
+          <!-- Input & UX Settings -->
+          <section class="modal-section">
+            <h3 class="modal-section-title">操作・表示設定</h3>
+            <div class="form-grid">
+              <label class="form-field">
+                <span>着手入力方式</span>
+                <select id="sel-input-mode">
+                  <option value="auto" selected>自動 (ペン直接 / 指仮置き)</option>
+                  <option value="always_ghost">常に仮置き＋確定</option>
+                  <option value="always_direct">常に直接着手</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>指上方向オフセット</span>
+                <select id="sel-touch-offset">
+                  <option value="52" selected>標準 (52px)</option>
+                  <option value="40">小さめ (40px)</option>
+                  <option value="64">大きめ (64px)</option>
+                  <option value="0">OFF (0px)</option>
+                </select>
+              </label>
+              <label class="form-field">
+                <span>候補手ラベル</span>
+                <select id="sel-cand-label">
+                  <option value="loss" selected>損目数 (-X.X)</option>
+                  <option value="winrate">勝率 (%)</option>
+                  <option value="rank">順位 (1..5)</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="toggle-list">
+              <label class="toggle-row">
+                <span>スマホ幅(&lt;600px)ではSペンも仮置き</span>
+                <input id="chk-pen-ghost-mobile" type="checkbox">
+              </label>
+              <label class="toggle-row">
+                <span>仮置き石の再タップで確定 (350ms保護)</span>
+                <input id="chk-retap-confirm" type="checkbox">
+              </label>
+              <label class="toggle-row">
+                <span>交点スナップ振動 (ハプティクス)</span>
+                <input id="chk-haptics" type="checkbox" checked>
+              </label>
+              <label class="toggle-row">
+                <span>左利きレイアウト (確定ボタン・パネル反転)</span>
+                <input id="chk-handed-left" type="checkbox">
+              </label>
+              <label class="toggle-row">
+                <span>対局中の画面スリープ防止</span>
+                <input id="chk-keep-screen" type="checkbox">
+              </label>
+            </div>
+          </section>
+
+          <!-- KataGo Engine Controls -->
+          <section class="modal-section">
+            <h3 class="modal-section-title">KataGo エンジン制御</h3>
+            <div id="engine-status-summary" class="engine-status-box">状態: 確認中…</div>
+            <div class="modal-btn-row">
+              <button id="btn-engine-warmup" class="secondary-btn" type="button" data-testid="btn-engine-warmup">⚡ エンジン起動</button>
+              <button id="btn-full-review" class="secondary-btn" type="button" data-testid="btn-full-review">📊 1局一括検討</button>
+              <button id="btn-engine-stop" class="secondary-btn is-danger" type="button" data-testid="btn-engine-stop">⏹ 停止</button>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+
+    <!-- Non-blocking Toast Overlay -->
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden data-testid="toast"></div>
+  </div>
+
+  <script type="module" src="/static/js/main.js?v=__BUILD_ID__"></script>
+</body>
+</html>
