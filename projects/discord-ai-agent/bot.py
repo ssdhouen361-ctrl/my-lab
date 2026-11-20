@@ -32,7 +32,7 @@ AGY_BIN = os.getenv("AGY_BIN", "/Users/sasadayuto/.local/bin/agy")
 AGY_MODE = os.getenv("AGY_MODE", "accept-edits")
 AGY_TIMEOUT_SECONDS = int(os.getenv("AGY_TIMEOUT_SECONDS", "900"))
 AGY_BG_TIMEOUT_SECONDS = int(os.getenv("AGY_BG_TIMEOUT_SECONDS", "0"))  # 0 = 時間制限なし
-AGY_MAX_BG_JOBS = int(os.getenv("AGY_MAX_BG_JOBS", "3"))
+AGY_MAX_BG_JOBS = int(os.getenv("AGY_MAX_BG_JOBS", "5"))
 AUTO_GIT_PUSH = os.getenv("AUTO_GIT_PUSH", "true").lower() == "true"
 
 _raw_allowed_ids = os.getenv("DISCORD_ALLOWED_USER_IDS", "").strip()
@@ -624,9 +624,9 @@ async def on_message(message: discord.Message):
             "- **`!bg <指示>`**（または `!裏 <指示>`）: **裏エージェント**を別プロセス＆時間制限なしで起動します（表チャットと同時並行OK・完了時に通知・音声添付もOK）。\n"
             "- **`!bg #<番号> <続きの指示>`** : 過去の裏エージェントの記憶を引き継いで続きを指示します。\n"
             "- **`!jobs`**（または `ジョブ`）: 裏エージェントの稼働状況・経過時間を確認します。\n"
-            "- **`!cancel <番号>`**（または `!cancel all`）: 指定した裏エージェントを強制停止します。\n"
+            "- **`!stop`**（または `中断`）: 表チャットの作業を停止します。\n"
+            "- **`!stop <番号>`** / **`!stop all`** : 指定した裏エージェント（または表＋裏すべて）を停止します。\n"
             "- `!new` または `リセット` : このチャンネル（スレッド）の会話記憶をリセットします。\n"
-            "- `!stop` または `中断` : 表チャットで実行中の作業を強制終了します。\n"
             "- `!status` : `agy`・裏ジョブ・リポジトリの状態を確認します。\n"
             "- `!restart` または `再起動` : Bot自身を再起動して最新コードを反映します。\n"
             "- **スレッド機能** を使うと、話題ごとに別々の会話履歴を保てます！",
@@ -664,25 +664,35 @@ async def on_message(message: discord.Message):
             icon = status_icons.get(j.status, j.status)
             lines.append(f"- **#{j.job_id}** [{icon}] ({elapsed}) — {j.prompt_summary}")
         running_cnt = len(get_running_bg_jobs())
-        lines.append(f"\n実行中: **{running_cnt} / {AGY_MAX_BG_JOBS}**（中断は `!cancel <番号>`、続きは `!bg #<番号> <指示>`）")
+        lines.append(f"\n実行中: **{running_cnt} / {AGY_MAX_BG_JOBS}**（停止: `!stop <番号>` or `!stop all` ／ 続き: `!bg #<番号> <指示>`）")
         await message.reply("\n".join(lines), mention_author=False)
         return
 
-    # 組み込みコマンド: !cancel <番号|all>
-    cancel_match = re.match(r"^!(?:cancel|kill)\s+#?(\d+|all)$", lower_text)
-    if cancel_match:
-        target = cancel_match.group(1)
+    # 組み込みコマンド: !stop / 中断（表チャット・裏エージェント統合停止コマンド）
+    stop_target_match = re.match(
+        r"^(?:!(?:stop|cancel|kill)|stop|中断|ストップ|!bg\s+stop)\s+#?(\d+|all)$",
+        lower_text,
+    )
+    if stop_target_match or lower_text in ("全部中断", "全停止"):
+        global stop_requested
+        target = "all" if not stop_target_match else stop_target_match.group(1)
         if target == "all":
+            stopped_parts: list[str] = []
+            if current_agy_proc is not None and current_agy_proc.returncode is None:
+                stop_requested = True
+                current_agy_proc.terminate()
+                stopped_parts.append("表チャット")
             running = get_running_bg_jobs()
-            if not running:
-                await message.reply("ℹ️ 現在実行中の裏エージェントはありません。", mention_author=False)
-                return
             for j in running:
                 j.cancel_requested = True
                 if j.proc is not None and j.proc.returncode is None:
                     j.proc.terminate()
-            ids_str = ", ".join(f"#{j.job_id}" for j in running)
-            await message.reply(f"🛑 実行中の裏エージェント（{ids_str}）に中断シグナルを送りました。", mention_author=False)
+            if running:
+                stopped_parts.append("裏エージェント（" + ", ".join(f"#{j.job_id}" for j in running) + "）")
+            if not stopped_parts:
+                await message.reply("ℹ️ 現在実行中の作業（表・裏とも）はありません。", mention_author=False)
+            else:
+                await message.reply(f"🛑 {' と '.join(stopped_parts)} をすべて停止しました。", mention_author=False)
             return
 
         jid = int(target)
@@ -693,7 +703,7 @@ async def on_message(message: discord.Message):
         job.cancel_requested = True
         if job.proc is not None and job.proc.returncode is None:
             job.proc.terminate()
-        await message.reply(f"🛑 裏エージェント **#{jid}** に中断シグナルを送りました。", mention_author=False)
+        await message.reply(f"🛑 裏エージェント **#{jid}** に停止シグナルを送りました。", mention_author=False)
         return
 
     # 組み込みコマンド: !bg / !裏（汎用バックグラウンド専属エージェント起動）
@@ -713,7 +723,7 @@ async def on_message(message: discord.Message):
             ids_str = ", ".join(f"#{j.job_id}" for j in running)
             await message.reply(
                 f"⚠️ 裏エージェントの同時実行上限（**{AGY_MAX_BG_JOBS}件**）に達しています（実行中: {ids_str}）。\n"
-                "完了を待つか、`!cancel <番号>` で不要なジョブを停止してから再度お試しください。",
+                "完了を待つか、`!stop <番号>` で不要なジョブを停止してから再度お試しください。",
                 mention_author=False,
             )
             return
@@ -762,24 +772,25 @@ async def on_message(message: discord.Message):
             f"- ⏱️ 時間制限: **{timeout_label}**\n"
             f"- 📊 現在の並列稼働: **{len(get_running_bg_jobs())} / {AGY_MAX_BG_JOBS}**\n"
             f"- 💬 表の `#{TARGET_CHANNEL}` はそのまま別の相談に使えます。完了したらここで通知します！\n"
-            f"*(状況確認: `!jobs` ／ 途中停止: `!cancel {job_id}`)*",
+            f"*(状況確認: `!jobs` ／ 途中停止: `!stop {job_id}`)*",
             mention_author=False,
         )
         return
 
-    # 組み込みコマンド: !stop / 中断
+    # 組み込みコマンド: !stop / 中断（引数なし＝表チャットを停止）
     if lower_text in ("!stop", "stop", "中断", "ストップ"):
-        global stop_requested
         if current_agy_proc is not None and current_agy_proc.returncode is None:
             stop_requested = True
             current_agy_proc.terminate()
-            await message.reply("🛑 表チャットで実行中の `agy` 作業を中断しました。次の指示を送れます。", mention_author=False)
+            await message.reply("🛑 表チャットで実行中の `agy` 作業を停止しました。次の指示を送れます。", mention_author=False)
         else:
             running_bg = get_running_bg_jobs()
             if running_bg:
                 ids_str = ", ".join(f"#{j.job_id}" for j in running_bg)
+                first_id = running_bg[0].job_id
                 await message.reply(
-                    f"ℹ️ 表チャットに実行中の作業はありません（裏エージェント {ids_str} が稼働中です。止める場合は `!cancel <番号>` を使用してください）。",
+                    f"ℹ️ 表チャットに実行中の作業はありません（裏エージェント {ids_str} が稼働中です。\n"
+                    f"裏を止める場合は **`!stop {first_id}`** または **`!stop all`** と送ってください）。",
                     mention_author=False,
                 )
             else:
