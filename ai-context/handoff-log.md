@@ -107,13 +107,18 @@
 
 ---
 
-## 進行中プロジェクト: 3台連携ネットワーク基盤構築（Tailscale）
+## 完了・稼働中プロジェクト: 3台連携ネットワーク基盤構築（Tailscale）
 
 - **環境プロファイル:** [ai-context/environment.md](environment.md)
 - **構築ガイド:** [docs/device-network-setup.md](../docs/device-network-setup.md)
-- **最終更新:** 2026-11-20
+- **最終更新:** 2026-11-21
 
-### 方針・現在のステータス
-- 普段使いの3台（Mac mini・Galaxy S26 Ultra・Galaxy Tab）を連携させる基盤として、すでに S26 Ultra で利用可能な **Tailscale** を採用してまず「使える完成形」を作る方針で合意。
-- 将来別ツール（ZeroTier / Cloudflare Tunnel / NetBird 等）へ引っ越す可能性も見据え、今後載せるアプリは標準 HTTP 通信で非依存に設計する。
-- **次のタスク:** Mac mini と Galaxy Tab に Tailscale を導入し、3台間の Taildrop およびブラウザ接続テスト（ポート8888テスト等）を完了させる。完了後、スマホ対応 Web 碁盤（KataGo × Gemini 解説）や n8n 等の構築へ進む。
+### 完了した内容
+- Mac mini（App Store 版・ログイン時自動起動・`Disable key expiry` 有効化）・Galaxy S26 Ultra・Galaxy Tab の **3台 Tailscale 連携が完了**。
+- Mac mini の簡易 Web サーバー（`python3 -m http.server 8888 --bind 0.0.0.0`）に対し、Tailscale 経由でブラウザからアクセスし一覧表示できることを実機確認済み。
+- 将来別ツール（ZeroTier / Cloudflare Tunnel / NetBird 等）へ引っ越す可能性も見据え、今後載せるアプリは標準 HTTP 通信で非依存に設計する方針。
+
+### 次のステップ候補（この土台の上に載せるもの）
+1. **スマホ・タブレット対応 Web 碁盤プロトタイプ**（Tailscale 経由で Mac mini の KataGo × Gemini 日本語解説を利用）
+2. **自動化基盤（n8n 等）や Obsidian / ローカル音声文字起こし（mlx-whisper）** の導入・連携
+3. **社バスウィジェット v1.1.0 アップデート**（フォント拡大・時刻表スリム化・ルーチン連携）

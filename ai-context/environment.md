@@ -2,7 +2,7 @@
 
 AIアシスタントが提案・開発・自動化設計を行う際の前提となる、ユーザーの利用端末・導入済みツール・普段使いのサービス一覧です。
 
-最終更新: 2026-11-20
+最終更新: 2026-11-21
 
 ---
 
@@ -10,12 +10,14 @@ AIアシスタントが提案・開発・自動化設計を行う際の前提と
 
 - **Mac mini（Apple M6 / メモリ 16GB / macOS）**
   - メイン開発・常時稼働サーバー（スリープ防止・画面ロック自動解除設定済み）
+  - Tailscale 導入・常駐設定済み（ログイン時自動起動 ON / キー有効期限無効化済み / ブラウザ疎通テスト完了）
 - **Galaxy S26 Ultra（Android）**
   - モバイル指示・アイデア出し・日常メイン端末
-  - Tailscale 導入・利用済み
+  - Tailscale 導入・接続確認済み
   - 導入アプリ：Discord、HTTP Request Shortcuts、モードとルーチン、Good Lock（Home Up）、自作「社バスウィジェット」
 - **Galaxy Tab（Android）**
   - ドキュメント閲覧・囲碁検討などの大画面操作
+  - Tailscale 導入・接続確認済み
   - 導入アプリ：Discord、Chrome リモートデスクトップ、HTTP Request Shortcuts、モードとルーチン
 - **ウェアラブル端末**
   - Galaxy Wearable アプリ利用（Samsung 製ウェアラブル連携）
@@ -44,7 +46,7 @@ AIアシスタントが提案・開発・自動化設計を行う際の前提と
 - LINE
 - Discord（Mac mini 連携ハブ：`#gemini-agent` / `#mac-control`）
 - Apple Music（Mac mini 起床自動再生用）
-- **Tailscale**（Galaxy S26 Ultra で利用可能）
+- **Tailscale**（Mac mini / Galaxy S26 Ultra / Galaxy Tab の3台連携・ブラウザ疎通確認完了）
 - GitHub（`ssdhouen361-ctrl/my-lab`）
 
 ---
