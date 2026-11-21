@@ -64,9 +64,10 @@
         </div>
 
         <div class="board-overlay-pills">
-          <div id="branch-pill" class="board-pill" hidden data-testid="branch-pill">
-            <span id="branch-pill-text" class="board-pill-label">🌿分岐 +1手</span>
-            <button id="btn-return-main" class="pill-action-btn" type="button" data-board-overlay-control data-testid="btn-return-main">本譜へ</button>
+          <div id="branch-pill" class="board-pill is-compact" hidden data-testid="branch-pill">
+            <span id="branch-pill-text" class="board-pill-label">🌿+1手</span>
+            <button id="btn-return-main" class="pill-action-btn is-compact" type="button" aria-label="本譜へ戻る" data-board-overlay-control data-testid="btn-return-main">本譜</button>
+            <button id="btn-dismiss-branch" class="pill-close-btn" type="button" aria-label="表示を閉じる" data-board-overlay-control data-testid="btn-dismiss-branch">✕</button>
           </div>
           <div id="zoom-pill" class="board-pill is-right" hidden data-testid="zoom-pill">
             <button id="btn-zoom-reset" class="pill-action-btn" type="button" data-board-overlay-control data-testid="btn-zoom-reset">🔍100%</button>
@@ -100,6 +101,9 @@
     <section id="action-bar" aria-label="操作バー" data-testid="action-bar">
       <div id="action-bar-normal" class="action-bar-pane">
         <div id="action-normal-text" class="action-summary-text">盤面タップで仮置き・ドラッグで微調整</div>
+        <div class="action-inline-group">
+          <button id="btn-action-return-main" class="compact-action-btn is-branch" type="button" hidden data-testid="btn-action-return-main">🌿本譜へ</button>
+        </div>
         <div id="action-review-controls" class="action-inline-group">
           <button id="btn-heatmap-mobile" class="compact-toggle-btn" type="button" aria-pressed="false" data-testid="btn-heatmap-mobile">🗺地合い</button>
         </div>

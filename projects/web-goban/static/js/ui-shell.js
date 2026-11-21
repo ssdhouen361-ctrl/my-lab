@@ -235,6 +235,7 @@ export class UiShell {
       branchDepth: 0,
       mainlineNodeId: null,
       branches: [],
+      branchPillDismissed: false,
       analysisEnabled: true,
       analysis: { root: null, moves: [], ownership: null, isFinal: false },
       evalHistory: [],
@@ -337,6 +338,8 @@ export class UiShell {
       branchPill: byId('branch-pill'),
       branchPillText: byId('branch-pill-text'),
       btnReturnMain: byId('btn-return-main'),
+      btnDismissBranch: byId('btn-dismiss-branch'),
+      btnActionReturnMain: byId('btn-action-return-main'),
       zoomPill: byId('zoom-pill'),
       btnZoomReset: byId('btn-zoom-reset'),
 
@@ -544,6 +547,15 @@ export class UiShell {
 
     // Board Overlays
     el.btnReturnMain.addEventListener('click', () => this.returnToMainline());
+    if (el.btnDismissBranch) {
+      el.btnDismissBranch.addEventListener('click', () => {
+        this.state.branchPillDismissed = true;
+        this._renderBoardOverlays();
+      });
+    }
+    if (el.btnActionReturnMain) {
+      el.btnActionReturnMain.addEventListener('click', () => this.returnToMainline());
+    }
     el.btnZoomReset.addEventListener('click', () => this.resetZoom());
 
     // Mobile Toolbar
@@ -1130,6 +1142,7 @@ export class UiShell {
   }
 
   returnToMainline() {
+    this.state.branchPillDismissed = false;
     if (this.state.mainlineNodeId) {
       this.navigateToNode(this.state.mainlineNodeId);
     } else if (this.state.mainlineIds && this.state.mainlineIds.length > 0) {
@@ -1875,10 +1888,17 @@ export class UiShell {
       el.externalKatagoBannerText.textContent = state.externalKatagoBanner;
     }
 
-    const showBranch = !state.isOnMainline && state.branchDepth > 0;
-    el.branchPill.hidden = !showBranch;
-    if (showBranch) {
-      el.branchPillText.textContent = `🌿分岐 +${state.branchDepth}手`;
+    const isBranch = !state.isOnMainline && state.branchDepth > 0;
+    const showBranchPill = isBranch && !state.branchPillDismissed;
+    el.branchPill.hidden = !showBranchPill;
+    if (showBranchPill) {
+      el.branchPillText.textContent = `🌿+${state.branchDepth}手`;
+    }
+    if (el.btnActionReturnMain) {
+      el.btnActionReturnMain.hidden = !isBranch;
+      if (isBranch) {
+        el.btnActionReturnMain.textContent = `🌿本譜(+${state.branchDepth})`;
+      }
     }
 
     const showZoom = state.zoom > 1.02;
