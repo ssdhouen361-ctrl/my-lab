@@ -952,6 +952,7 @@ class KataGoEngine:
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
+                cwd=str(self.settings.project_dir),
                 limit=STDOUT_BUFFER_LIMIT,  # Pitfall #1: 8MB line limit
             )
         except Exception as exc:
