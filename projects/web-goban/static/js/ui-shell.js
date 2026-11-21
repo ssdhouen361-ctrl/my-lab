@@ -275,6 +275,14 @@ export class UiShell {
     this.SETTINGS_STORAGE_KEY = 'webgoban_user_settings_v1';
     const savedSettings = this._loadSavedSettings();
 
+    // 旧バージョンの 'auto' や空設定の場合はデフォルトで 'retap' (再タップ確定) に移行
+    let initialInputMode = savedSettings.inputMode;
+    let initialReTap = savedSettings.reTapConfirm;
+    if (!initialInputMode || initialInputMode === 'auto' || initialInputMode === 'retap') {
+      initialInputMode = 'retap';
+      initialReTap = true;
+    }
+
     this.input = new InputController(
       this.el.boardStage,
       this.canvas,
@@ -291,10 +299,10 @@ export class UiShell {
         onZoomChange: (zoom) => this._onZoomChange(zoom),
       },
       {
-        inputMode: savedSettings.inputMode || 'auto',
+        inputMode: initialInputMode,
         penGhostOnMobile: !!savedSettings.penGhostOnMobile,
         touchOffsetPx: savedSettings.touchOffsetPx ?? 52,
-        reTapConfirm: savedSettings.reTapConfirm ?? true, // 初期値を①「再タップ確定」にする
+        reTapConfirm: initialReTap,
         hapticsEnabled: savedSettings.hapticsEnabled ?? true,
       }
     );
@@ -746,8 +754,9 @@ export class UiShell {
 
   _applySettingsToUi(s) {
     if (!s) return;
-    if (s.inputMode && this.el.selInputMode) {
-      this.el.selInputMode.value = s.inputMode;
+    const mode = s.inputMode === 'auto' || !s.inputMode ? 'retap' : s.inputMode;
+    if (this.el.selInputMode) {
+      this.el.selInputMode.value = mode;
     }
     if (s.touchOffsetPx !== undefined && this.el.selTouchOffset) {
       this.el.selTouchOffset.value = String(s.touchOffsetPx);
@@ -760,8 +769,8 @@ export class UiShell {
     if (s.penGhostOnMobile !== undefined && this.el.chkPenGhostMobile) {
       this.el.chkPenGhostMobile.checked = !!s.penGhostOnMobile;
     }
-    if (s.reTapConfirm !== undefined && this.el.chkRetapConfirm) {
-      this.el.chkRetapConfirm.checked = !!s.reTapConfirm;
+    if (this.el.chkRetapConfirm) {
+      this.el.chkRetapConfirm.checked = s.reTapConfirm !== undefined ? !!s.reTapConfirm : (mode === 'retap');
     }
     if (s.hapticsEnabled !== undefined && this.el.chkHaptics) {
       this.el.chkHaptics.checked = !!s.hapticsEnabled;
