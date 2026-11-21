@@ -175,6 +175,11 @@
   - ブラウザのアドレスバー・タブバーを完全に消去した没入型フルスクリーン（`Theme.DeviceDefault.NoActionBar.Fullscreen`）を実現。
   - フロントエンドの `PlatformBridge`（`WebGobanNative`）と連動し、Android のシステム「戻る」ジェスチャー（詳細ウィンドウ閉じる ➔ 仮置き取消 ➔ 1手戻る）および常時点灯（`FLAG_KEEP_SCREEN_ON`）、ハプティクス（微小振動）、SGF 共有インテント受付を実装。
   - `.github/workflows/build-web-goban-apk.yml` を整備し、コミット時に GitHub Actions 上で自動ビルドされ、GitHub Releases（タグ: `web-goban-latest`）から `.apk` を直接ダウンロードできるように自動化。
+- **Phase 2（Gemini AI コーチ基盤）の先行着手:**
+  - `app/schemas/coach.py`: 単発解説・段階ヒント・1局振り返りの厳密 Pydantic / JSON Schema を定義。
+  - `app/fact_bridge.py`: 確定ファクト抽出器（`GoFactBridge`）・大差局面判定（`is_garbage_time`）・盤サイズ別悪手/好手判定（`classify_move_quality`）・エリア名マッピングを実装。
+  - `app/coach_provider.py`: 決定論的オフライン・ルールベースフォールバックコーチ（`RuleBasedFallbackCoach`）を実装。
+  - `tests/unit/test_coach_and_facts.py`: ファクト抽出およびフォールバック解説の単体テストを整備し全件 PASS。
 
 ### 次のタスク（ユーザー操作＆Phase 1-C / Phase 2）
 1. **Mac mini ターミナルで初回環境構築＆全層 QA 実行（ネットワーク・Metal GPU 解放環境）:**
