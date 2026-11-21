@@ -252,7 +252,7 @@ export class UiShell {
       coachCard: null,
       coachReport: null,
       flashNote: null,
-      sheetSnap: 'closed', // 'closed' | 'half' | 'full'
+      sheetSnap: 'docked', // 'closed' | 'docked' | 'half' | 'full'
       sheetTab: 'candidates',
       sideTab: 'candidates',
       menuOpen: false,
@@ -314,6 +314,7 @@ export class UiShell {
     this._wirePlatformBridge();
     this.syncLayoutMode();
     this.renderAll();
+    this._updateUrlState();
   }
 
   _queryElements() {
@@ -506,8 +507,12 @@ export class UiShell {
         this.setMenuOpen(false);
         return true;
       }
-      if (this.state.sheetSnap !== 'closed') {
-        this.setSheetSnap('closed');
+      if (this.state.sheetSnap === 'full' || this.state.sheetSnap === 'half') {
+        this.setSheetSnap('docked');
+        return true;
+      }
+      if (this.state.sheetSnap !== 'closed' && this.state.sheetSnap !== 'docked') {
+        this.setSheetSnap('docked');
         return true;
       }
       if (this.state.zoom > 1.01) {
@@ -567,10 +572,17 @@ export class UiShell {
     el.btnNext.addEventListener('click', () => this.navigateRelative(1));
     el.btnToggleAnalyze.addEventListener('click', () => this._onPrimaryAnalyzeOrHintClick());
     el.btnOpenSheet.addEventListener('click', () => {
-      this.setSheetSnap(this.state.sheetSnap === 'closed' ? 'half' : 'closed');
+      if (this.state.sheetSnap === 'full') {
+        this.setSheetSnap('docked');
+      } else if (this.state.sheetSnap === 'half') {
+        this.setSheetSnap('full');
+      } else {
+        this.setSheetSnap('half');
+      }
     });
     if (el.btnReload) {
       el.btnReload.addEventListener('click', () => {
+        this._updateUrlState();
         window.location.reload();
       });
     }
@@ -633,9 +645,11 @@ export class UiShell {
       this.setSheetTab(btn.dataset.sheetTab);
     });
     el.btnSheetExpand.addEventListener('click', () => {
-      this.setSheetSnap(this.state.sheetSnap === 'full' ? 'half' : 'full');
+      this.setSheetSnap(this.state.sheetSnap === 'full' ? 'docked' : 'full');
     });
-    el.btnSheetClose.addEventListener('click', () => this.setSheetSnap('closed'));
+    el.btnSheetClose.addEventListener('click', () => {
+      this.setSheetSnap(this.state.sheetSnap === 'docked' ? 'closed' : 'docked');
+    });
     this._bindSheetHandleDrag();
 
     // SVG Graph click & drag scrubbing
@@ -831,7 +845,7 @@ export class UiShell {
       if (dy < -42) {
         this.setSheetSnap('full');
       } else if (dy > 48) {
-        this.setSheetSnap(startSnap === 'full' ? 'half' : 'closed');
+        this.setSheetSnap(startSnap === 'full' ? 'half' : startSnap === 'half' ? 'docked' : 'docked');
       }
     });
     handle.addEventListener('pointercancel', () => {
@@ -983,12 +997,12 @@ export class UiShell {
   // --- Sheet & Modal Navigation ---
 
   setSheetSnap(snap) {
-    const valid = snap === 'half' || snap === 'full' ? snap : 'closed';
-    const wasClosed = this.state.sheetSnap === 'closed';
+    const valid = snap === 'half' || snap === 'full' || snap === 'docked' ? snap : 'closed';
+    const wasHidden = this.state.sheetSnap === 'closed';
     this.state.sheetSnap = valid;
     this.el.bottomSheet.dataset.snap = valid;
     this.el.btnSheetExpand.textContent = valid === 'full' ? '⤡' : '⤢';
-    if (wasClosed && valid !== 'closed') {
+    if (wasHidden && valid !== 'closed' && valid !== 'docked') {
       PlatformBridge.pushUiOverlayHistory('sheet');
     }
     if (valid !== 'closed') {
@@ -1304,12 +1318,37 @@ export class UiShell {
     this.ws.connect(gameId, this.state.stateVersion);
   }
 
-  async handleDeepLink({ game, sgf, move, mode } = {}) {
+  _updateUrlState() {
+    if (typeof window === 'undefined' || !window.history || !window.history.replaceState) return;
+    if (this.state.fixtureActive || !this.state.gameId) return;
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('game', this.state.gameId);
+      if (this.state.currentNodeId) {
+        url.searchParams.set('node', this.state.currentNodeId);
+      }
+      if (Number.isFinite(this.state.moveNumber)) {
+        url.searchParams.set('move', String(this.state.moveNumber));
+      }
+      if (this.state.mode && this.state.mode !== 'review') {
+        url.searchParams.set('mode', this.state.mode);
+      } else {
+        url.searchParams.delete('mode');
+      }
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    } catch {
+      // Ignore URL update errors in restricted frames
+    }
+  }
+
+  async handleDeepLink({ game, node, sgf, move, mode } = {}) {
     if (game) {
       const res = await this.ws.getGame(game);
       if (res.ok && res.data) {
         this.openGame(game, res.data);
-        if (Number.isFinite(Number(move))) {
+        if (node) {
+          setTimeout(() => this.navigateToNode(node), 150);
+        } else if (Number.isFinite(Number(move))) {
           setTimeout(() => this.navigateToMove(Number(move)), 150);
         }
         return true;
@@ -1323,7 +1362,9 @@ export class UiShell {
           const gid = created.data.game_id || created.data.id;
           this.openGame(gid, created.data);
           await this.importSgfText(res.data.sgf_text);
-          if (Number.isFinite(Number(move))) {
+          if (node) {
+            setTimeout(() => this.navigateToNode(node), 150);
+          } else if (Number.isFinite(Number(move))) {
             setTimeout(() => this.navigateToMove(Number(move)), 150);
           }
           return true;
@@ -1604,6 +1645,7 @@ export class UiShell {
     });
 
     this.renderAll();
+    this._updateUrlState();
   }
 
   applyAnalysisUpdate(payload) {
@@ -1825,6 +1867,7 @@ export class UiShell {
     });
     this._syncPvAndHoverCanvas();
     this.renderAll();
+    this._updateUrlState();
   }
 
   // --- Full UI Renderers ---

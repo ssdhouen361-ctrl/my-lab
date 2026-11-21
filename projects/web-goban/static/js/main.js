@@ -71,6 +71,7 @@ async function bootstrap() {
 
   const params = new URLSearchParams(window.location.search);
   const gameParam = params.get('game');
+  const nodeParam = params.get('node');
   const sgfParam = params.get('sgf');
   const moveParam = params.get('move');
   const modeParam = params.get('mode');
@@ -78,6 +79,7 @@ async function bootstrap() {
   if (gameParam || sgfParam) {
     const handled = await shell.handleDeepLink({
       game: gameParam,
+      node: nodeParam || undefined,
       sgf: sgfParam,
       move: moveParam !== null ? Number(moveParam) : undefined,
       mode: modeParam || undefined,

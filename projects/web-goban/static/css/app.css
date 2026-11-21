@@ -681,6 +681,8 @@ button:focus-visible {
 /* [4] Mobile Bottom Toolbar (56px + safe-area-bottom) */
 #bottom-toolbar {
   flex: 0 0 auto;
+  position: relative;
+  z-index: 50;
   height: calc(56px + var(--inset-bottom));
   padding: 4px 6px calc(4px + var(--inset-bottom));
   background: var(--bg-surface);
@@ -722,7 +724,7 @@ button:focus-visible {
   position: fixed;
   left: var(--inset-left);
   right: var(--inset-right);
-  bottom: 0;
+  bottom: calc(56px + var(--inset-bottom));
   z-index: 40;
   background: var(--bg-surface);
   border-top: 1px solid var(--border-strong);
@@ -737,14 +739,18 @@ button:focus-visible {
   display: none;
 }
 
+#bottom-sheet[data-snap="docked"] {
+  height: clamp(140px, 20dvh, 200px);
+}
+
 #bottom-sheet[data-snap="half"] {
-  height: 52dvh;
-  max-height: calc(100dvh - var(--inset-top) - 44px);
+  height: calc(52dvh - 56px);
+  max-height: calc(100dvh - var(--inset-top) - var(--inset-bottom) - 100px);
 }
 
 #bottom-sheet[data-snap="full"] {
-  height: 84dvh;
-  max-height: calc(100dvh - var(--inset-top) - 8px);
+  height: calc(84dvh - 56px);
+  max-height: calc(100dvh - var(--inset-top) - var(--inset-bottom) - 64px);
 }
 
 #sheet-handle {
