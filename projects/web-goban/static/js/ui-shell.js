@@ -272,6 +272,9 @@ export class UiShell {
     this._sheetDrag = null;
     this._resizeObserver = null;
 
+    this.SETTINGS_STORAGE_KEY = 'webgoban_user_settings_v1';
+    const savedSettings = this._loadSavedSettings();
+
     this.input = new InputController(
       this.el.boardStage,
       this.canvas,
@@ -288,15 +291,16 @@ export class UiShell {
         onZoomChange: (zoom) => this._onZoomChange(zoom),
       },
       {
-        inputMode: 'auto',
-        penGhostOnMobile: false,
-        touchOffsetPx: 52,
-        reTapConfirm: false,
-        hapticsEnabled: true,
+        inputMode: savedSettings.inputMode || 'auto',
+        penGhostOnMobile: !!savedSettings.penGhostOnMobile,
+        touchOffsetPx: savedSettings.touchOffsetPx ?? 52,
+        reTapConfirm: savedSettings.reTapConfirm ?? true, // 初期値を①「再タップ確定」にする
+        hapticsEnabled: savedSettings.hapticsEnabled ?? true,
       }
     );
 
     this._bindEvents();
+    this._applySettingsToUi(savedSettings);
     this._setupResizeObserver();
     this._wirePlatformBridge();
     this.syncLayoutMode();
@@ -639,31 +643,48 @@ export class UiShell {
 
     // Settings Controls
     el.selInputMode.addEventListener('change', () => {
-      this.input.updateSettings({ inputMode: el.selInputMode.value });
+      const mode = el.selInputMode.value;
+      if (mode === 'retap') {
+        this.input.updateSettings({ inputMode: 'auto', reTapConfirm: true });
+      } else if (mode === 'always_direct') {
+        this.input.updateSettings({ inputMode: 'always_direct', reTapConfirm: false });
+      } else if (mode === 'always_ghost') {
+        this.input.updateSettings({ inputMode: 'always_ghost', reTapConfirm: false });
+      } else {
+        this.input.updateSettings({ inputMode: mode });
+      }
+      this._saveCurrentSettings();
     });
     el.selTouchOffset.addEventListener('change', () => {
       this.input.updateSettings({ touchOffsetPx: parseInt(el.selTouchOffset.value, 10) || 0 });
+      this._saveCurrentSettings();
     });
     el.selCandLabel.addEventListener('change', () => {
       this.state.candidateLabelMode = el.selCandLabel.value;
       this.canvas.setDynamicState({ candidateLabelMode: this.state.candidateLabelMode });
+      this._saveCurrentSettings();
     });
     el.chkPenGhostMobile.addEventListener('change', () => {
       this.input.updateSettings({ penGhostOnMobile: el.chkPenGhostMobile.checked });
+      this._saveCurrentSettings();
     });
     el.chkRetapConfirm.addEventListener('change', () => {
       this.input.updateSettings({ reTapConfirm: el.chkRetapConfirm.checked });
+      this._saveCurrentSettings();
     });
     el.chkHaptics.addEventListener('change', () => {
       this.input.updateSettings({ hapticsEnabled: el.chkHaptics.checked });
+      this._saveCurrentSettings();
     });
     el.chkHandedLeft.addEventListener('change', () => {
       this.state.handedLeft = el.chkHandedLeft.checked;
       this.el.app.classList.toggle('handed-left', this.state.handedLeft);
       this._resizeBoardFromStage();
+      this._saveCurrentSettings();
     });
     el.chkKeepScreen.addEventListener('change', () => {
       PlatformBridge.setKeepScreenOn(el.chkKeepScreen.checked);
+      this._saveCurrentSettings();
     });
 
     // Engine Controls
@@ -693,6 +714,64 @@ export class UiShell {
         this.showToast('サーバー未接続のため一括検討できません');
       }
     });
+  }
+
+  _loadSavedSettings() {
+    try {
+      const raw = window.localStorage.getItem(this.SETTINGS_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  }
+
+  _saveCurrentSettings() {
+    try {
+      const s = {
+        inputMode: this.el.selInputMode.value,
+        touchOffsetPx: parseInt(this.el.selTouchOffset.value, 10) || 0,
+        candidateLabelMode: this.state.candidateLabelMode,
+        penGhostOnMobile: this.el.chkPenGhostMobile.checked,
+        reTapConfirm: this.input.settings.reTapConfirm,
+        hapticsEnabled: this.el.chkHaptics.checked,
+        handedLeft: this.state.handedLeft,
+        keepScreenOn: this.el.chkKeepScreen.checked,
+      };
+      window.localStorage.setItem(this.SETTINGS_STORAGE_KEY, JSON.stringify(s));
+    } catch {}
+  }
+
+  _applySettingsToUi(s) {
+    if (!s) return;
+    if (s.inputMode && this.el.selInputMode) {
+      this.el.selInputMode.value = s.inputMode;
+    }
+    if (s.touchOffsetPx !== undefined && this.el.selTouchOffset) {
+      this.el.selTouchOffset.value = String(s.touchOffsetPx);
+    }
+    if (s.candidateLabelMode && this.el.selCandLabel) {
+      this.el.selCandLabel.value = s.candidateLabelMode;
+      this.state.candidateLabelMode = s.candidateLabelMode;
+      this.canvas.setDynamicState({ candidateLabelMode: s.candidateLabelMode });
+    }
+    if (s.penGhostOnMobile !== undefined && this.el.chkPenGhostMobile) {
+      this.el.chkPenGhostMobile.checked = !!s.penGhostOnMobile;
+    }
+    if (s.reTapConfirm !== undefined && this.el.chkRetapConfirm) {
+      this.el.chkRetapConfirm.checked = !!s.reTapConfirm;
+    }
+    if (s.hapticsEnabled !== undefined && this.el.chkHaptics) {
+      this.el.chkHaptics.checked = !!s.hapticsEnabled;
+    }
+    if (s.handedLeft !== undefined && this.el.chkHandedLeft) {
+      this.el.chkHandedLeft.checked = !!s.handedLeft;
+      this.state.handedLeft = !!s.handedLeft;
+      this.el.app.classList.toggle('handed-left', this.state.handedLeft);
+    }
+    if (s.keepScreenOn !== undefined && this.el.chkKeepScreen) {
+      this.el.chkKeepScreen.checked = !!s.keepScreenOn;
+      PlatformBridge.setKeepScreenOn(this.el.chkKeepScreen.checked);
+    }
   }
 
   _bindSheetHandleDrag() {

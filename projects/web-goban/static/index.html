@@ -338,12 +338,12 @@
           <section class="modal-section">
             <h3 class="modal-section-title">操作・表示設定</h3>
             <div class="form-grid">
-              <label class="form-field">
-                <span>着手入力方式</span>
+              <label class="form-field is-wide">
+                <span>着手方法（決定ボタン不要化）</span>
                 <select id="sel-input-mode">
-                  <option value="auto" selected>自動 (ペン直接 / 指仮置き)</option>
-                  <option value="always_ghost">常に仮置き＋確定</option>
-                  <option value="always_direct">常に直接着手</option>
+                  <option value="retap" selected>① 仮置き ➔ 同じ石を再タップで着手</option>
+                  <option value="always_direct">② 1タップで直接着手（早碁・直感）</option>
+                  <option value="always_ghost">③ 仮置き ➔ 右下の決定ボタンで着手</option>
                 </select>
               </label>
               <label class="form-field">
