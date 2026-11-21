@@ -198,6 +198,27 @@ button:focus-visible {
   flex-shrink: 0;
 }
 
+.top-branch-btn {
+  min-height: 28px;
+  height: 28px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.25);
+  border: 1px solid rgba(52, 211, 153, 0.7);
+  color: #A7F3D0;
+  border-radius: 6px;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 4px;
+}
+
+.top-branch-btn:hover {
+  background: rgba(16, 185, 129, 0.4);
+}
+
 .icon-btn {
   width: 44px;
   height: 44px;

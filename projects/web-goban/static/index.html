@@ -48,6 +48,7 @@
           <div id="top-winrate-fill" class="winrate-fill" style="width: 50%;"></div>
         </div>
         <span id="top-score-text" class="score-text">互角</span>
+        <button id="btn-top-return-main" class="top-branch-btn" type="button" aria-label="本譜へ戻る" hidden data-testid="btn-top-return-main">🌿+1手 本譜へ</button>
       </div>
       <button id="btn-settings" class="icon-btn" type="button" aria-label="設定・メニュー" data-testid="btn-settings">⚙</button>
     </header>
@@ -64,7 +65,7 @@
         </div>
 
         <div class="board-overlay-pills">
-          <div id="branch-pill" class="board-pill is-compact" hidden data-testid="branch-pill">
+          <div id="branch-pill" class="board-pill is-compact" hidden style="display: none !important;" data-testid="branch-pill">
             <span id="branch-pill-text" class="board-pill-label">🌿+1手</span>
             <button id="btn-return-main" class="pill-action-btn is-compact" type="button" aria-label="本譜へ戻る" data-board-overlay-control data-testid="btn-return-main">本譜</button>
             <button id="btn-dismiss-branch" class="pill-close-btn" type="button" aria-label="表示を閉じる" data-board-overlay-control data-testid="btn-dismiss-branch">✕</button>

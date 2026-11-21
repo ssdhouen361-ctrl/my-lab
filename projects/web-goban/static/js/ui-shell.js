@@ -325,6 +325,7 @@ export class UiShell {
       topMoveText: byId('top-move-text'),
       topWinrateFill: byId('top-winrate-fill'),
       topScoreText: byId('top-score-text'),
+      btnTopReturnMain: byId('btn-top-return-main'),
       btnSettings: byId('btn-settings'),
 
       boardColumn: byId('board-column'),
@@ -545,8 +546,11 @@ export class UiShell {
     el.btnSideGhostCancel.addEventListener('click', () => this.cancelGhost());
     el.btnSideGhostConfirm.addEventListener('click', () => this.confirmGhost());
 
-    // Board Overlays
+    // Board Overlays & Branch Navigation
     el.btnReturnMain.addEventListener('click', () => this.returnToMainline());
+    if (el.btnTopReturnMain) {
+      el.btnTopReturnMain.addEventListener('click', () => this.returnToMainline());
+    }
     if (el.btnDismissBranch) {
       el.btnDismissBranch.addEventListener('click', () => {
         this.state.branchPillDismissed = true;
@@ -1889,11 +1893,18 @@ export class UiShell {
     }
 
     const isBranch = !state.isOnMainline && state.branchDepth > 0;
-    const showBranchPill = isBranch && !state.branchPillDismissed;
-    el.branchPill.hidden = !showBranchPill;
-    if (showBranchPill) {
-      el.branchPillText.textContent = `🌿+${state.branchDepth}手`;
+    // 盤面上のオーバーレイは非表示（盤面の視認性と誤タップ防止のため）
+    el.branchPill.hidden = true;
+
+    // トップバー（最上部ステータスバー）に本譜復帰ボタンを表示
+    if (el.btnTopReturnMain) {
+      el.btnTopReturnMain.hidden = !isBranch;
+      if (isBranch) {
+        el.btnTopReturnMain.textContent = `🌿+${state.branchDepth}手 本譜へ`;
+      }
     }
+
+    // 盤面直下の操作バーにも本譜復帰ボタンを表示
     if (el.btnActionReturnMain) {
       el.btnActionReturnMain.hidden = !isBranch;
       if (isBranch) {
