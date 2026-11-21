@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#1A1D21"
+        android:pathData="M0,0h108v108h-108z" />
+    <!-- 盤面（木目イメージ） -->
+    <path
+        android:fillColor="#D4A359"
+        android:pathData="M16,16h76v76h-76z" />
+    <!-- 碁盤の格子線 -->
+    <path
+        android:strokeColor="#5C3A16"
+        android:strokeWidth="1.5"
+        android:pathData="M26,16v76 M42,16v76 M54,16v76 M66,16v76 M82,16v76 M16,26h76 M16,42h76 M16,54h76 M16,66h76 M16,82h76" />
+    <!-- 星（天元など） -->
+    <path
+        android:fillColor="#3D250C"
+        android:pathData="M54,54m-2.5,0a2.5,2.5 0 1,0 5,0a2.5,2.5 0 1,0 -5,0" />
+    <!-- 黒石 -->
+    <path
+        android:fillColor="#111827"
+        android:pathData="M42,42m-11,0a11,11 0 1,0 22,0a11,11 0 1,0 -22,0" />
+    <!-- 白石 -->
+    <path
+        android:fillColor="#F9FAFB"
+        android:strokeColor="#CBD5E1"
+        android:strokeWidth="1"
+        android:pathData="M66,66m-11,0a11,11 0 1,0 22,0a11,11 0 1,0 -22,0" />
+</vector>
