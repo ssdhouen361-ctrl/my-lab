@@ -622,12 +622,12 @@ button:focus-visible {
 #bottom-toolbar {
   flex: 0 0 auto;
   height: calc(56px + var(--inset-bottom));
-  padding: 4px 8px calc(4px + var(--inset-bottom));
+  padding: 4px 6px calc(4px + var(--inset-bottom));
   background: var(--bg-surface);
   box-shadow: inset 0 1px 0 var(--border-subtle);
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 5px;
 }
 
 .toolbar-btn {

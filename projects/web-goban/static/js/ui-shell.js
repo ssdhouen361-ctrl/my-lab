@@ -371,6 +371,7 @@ export class UiShell {
       analyzeBtnIcon: byId('analyze-btn-icon'),
       analyzeBtnLabel: byId('analyze-btn-label'),
       btnOpenSheet: byId('btn-open-sheet'),
+      btnReload: byId('btn-reload'),
       btnMenu: byId('btn-menu'),
 
       sidePanel: byId('side-panel'),
@@ -552,6 +553,11 @@ export class UiShell {
     el.btnOpenSheet.addEventListener('click', () => {
       this.setSheetSnap(this.state.sheetSnap === 'closed' ? 'half' : 'closed');
     });
+    if (el.btnReload) {
+      el.btnReload.addEventListener('click', () => {
+        window.location.reload();
+      });
+    }
     el.btnMenu.addEventListener('click', () => this.setMenuOpen(true));
     el.btnSettings.addEventListener('click', () => this.setMenuOpen(true));
 
