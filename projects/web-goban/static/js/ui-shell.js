@@ -645,11 +645,14 @@ export class UiShell {
     el.selInputMode.addEventListener('change', () => {
       const mode = el.selInputMode.value;
       if (mode === 'retap') {
-        this.input.updateSettings({ inputMode: 'auto', reTapConfirm: true });
+        this.input.updateSettings({ inputMode: 'retap', reTapConfirm: true });
+        if (el.chkRetapConfirm) el.chkRetapConfirm.checked = true;
       } else if (mode === 'always_direct') {
         this.input.updateSettings({ inputMode: 'always_direct', reTapConfirm: false });
+        if (el.chkRetapConfirm) el.chkRetapConfirm.checked = false;
       } else if (mode === 'always_ghost') {
         this.input.updateSettings({ inputMode: 'always_ghost', reTapConfirm: false });
+        if (el.chkRetapConfirm) el.chkRetapConfirm.checked = false;
       } else {
         this.input.updateSettings({ inputMode: mode });
       }

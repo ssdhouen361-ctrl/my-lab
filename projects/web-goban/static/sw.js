@@ -1,4 +1,4 @@
-const CACHE_NAME = 'web-goban-static-v2';
+const CACHE_NAME = 'web-goban-static-v3';
 
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());

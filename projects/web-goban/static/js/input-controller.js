@@ -231,18 +231,14 @@ export class InputController {
   _shouldUseDirectPlay(pointerType) {
     const mode = this.settings.inputMode;
     if (mode === 'always_direct') return true;
-    if (mode === 'always_ghost') return false;
-    // 'auto' mode
-    if (pointerType === 'pen') {
-      if (this.settings.penGhostOnMobile && typeof window !== 'undefined' && window.innerWidth < 600) {
-        return false;
-      }
-      return true;
+    if (mode === 'always_ghost' || mode === 'retap') return false;
+    // 'auto' mode: 指・ペンともにユーザー選択設定（reTapConfirm / inputMode）に従う
+    if (pointerType === 'pen' && this.settings.reTapConfirm) {
+      return false;
     }
     if (pointerType === 'mouse') {
       return true;
     }
-    // touch defaults to ghost + confirm
     return false;
   }
 
@@ -372,9 +368,27 @@ export class InputController {
           this.state = 'IDLE';
           PlatformBridge.haptic('confirm');
           this.callbacks.onDirectPlay?.(pos.gtp, { x: pos.x, y: pos.y, pointerType: type });
-        } else {
-          this._lockGhostAt(pos.x, pos.y, pos.gtp, 0);
+          return;
         }
+
+        // ペン操作でも同じ仮置き交点の再タップで確定（reTapConfirm 有効時）
+        if (this.lockedGhost === pos.gtp) {
+          if (
+            this.settings.reTapConfirm &&
+            performance.now() - this.ghostLockedAt >= this.settings.reTapGuardMs
+          ) {
+            const confirmGtp = this.lockedGhost;
+            this.clearGhost();
+            this.state = 'IDLE';
+            PlatformBridge.haptic('confirm');
+            this.callbacks.onDirectPlay?.(confirmGtp, { x: pos.x, y: pos.y, pointerType: type });
+            return;
+          }
+          this.state = 'TOUCH_GHOST_LOCKED';
+          return;
+        }
+
+        this._lockGhostAt(pos.x, pos.y, pos.gtp, 0);
         return;
       }
     }
