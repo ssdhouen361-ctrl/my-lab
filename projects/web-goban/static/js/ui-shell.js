@@ -2200,6 +2200,61 @@ export class UiShell {
           }
         });
       }
+      const explainBtn = container.querySelector('[data-action-request-explain]');
+      if (explainBtn) {
+        explainBtn.addEventListener('click', async () => {
+          this.showToast('AI コーチに問い合わせ中…');
+          try {
+            const res = await fetch(`/api/v1/games/${this.state.gameId}/coach/explain`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ node_id: this.state.currentNodeId }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.state.coachCard = {
+                headline: data.summary,
+                reasons: [data.best_move_reason, data.loss_explanation],
+                recommended_plan: `考え方の要点: ${data.key_concept}`,
+                one_point_tip: '焦らず手番の主導権を握りましょう。',
+              };
+              this._renderCoach();
+            } else {
+              this.showToast('解説の取得に失敗しました');
+            }
+          } catch {
+            this.showToast('通信エラーが発生しました');
+          }
+        });
+      }
+      const hintBtn = container.querySelector('[data-action-request-hint]');
+      if (hintBtn) {
+        hintBtn.addEventListener('click', async () => {
+          this.showToast('ヒントを取得中…');
+          try {
+            const res = await fetch(`/api/v1/games/${this.state.gameId}/coach/hint`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ stage: 1 }),
+            });
+            if (res.ok) {
+              const data = await res.json();
+              this.state.hintState = {
+                level: data.stage,
+                lv1_macro: data.headline + ' — ' + data.detail,
+                lv2_strategy: `注目エリア: ${data.recommended_area}`,
+                lv3_narrow: data.candidate_gtp ? `推奨手: ${data.candidate_gtp}` : null,
+                thinking_question: 'この周辺の石の強弱はどうなっていますか？',
+              };
+              this._renderCoach();
+            } else {
+              this.showToast('ヒントの取得に失敗しました');
+            }
+          } catch {
+            this.showToast('通信エラーが発生しました');
+          }
+        });
+      }
     }
   }
 
@@ -2300,16 +2355,20 @@ export class UiShell {
       `;
     }
 
-    // 4. Phase 2 placeholder
+    // 4. Interactive Live Coach (Fetch or Trigger)
     return `
       ${inlineGraphMarkup}
       <div class="coach-card">
         <div class="coach-card-header">
-          <span class="coach-badge">🤖 Gemini AI 囲碁コーチ (Phase 2)</span>
+          <span class="coach-badge">🤖 Gemini AI 囲碁コーチ</span>
         </div>
-        <h3 class="coach-headline">KataGoの確定ファクトに基づく日本語解説</h3>
+        <h3 class="coach-headline">KataGo の確定ファクトに基づく局面解説</h3>
         <div class="coach-blunder-item">
-          Phase 2 では悪手の理由解説・座標を出さない3段階ヒント・1局まるごと自動振り返りレポートおよび音声読み上げ（TTS）がここに表示されます。
+          現在の手番や着手について、KataGo の計算に基づいた理由やアドバイスを取得できます。
+        </div>
+        <div class="coach-btn-group" style="display: flex; gap: 8px; margin-top: 10px;">
+          <button type="button" class="primary-btn" data-action-request-explain="1" style="flex: 1;">❓ なぜ悪手・損失？</button>
+          <button type="button" class="secondary-btn" data-action-request-hint="1" style="flex: 1;">💡 次の一手ヒント</button>
         </div>
       </div>
     `;

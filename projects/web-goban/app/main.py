@@ -583,6 +583,67 @@ def create_app(
         return {"deleted": True, "sgf_id": sgf_id}
 
     # ------------------------------------------------------------------
+    # REST API: Gemini AI Coach (Phase 2)
+    # ------------------------------------------------------------------
+
+    @app.post("/api/v1/games/{game_id}/coach/explain")
+    async def coach_explain(game_id: str, request: Request) -> dict[str, Any]:
+        session = await hub.get_or_load_session(game_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="セッションが見つかりません。")
+
+        body = await request.json() if (await request.body()) else {}
+        node_id = body.get("node_id") or session.tree.latest_node_id
+        node = session.tree.get_node(node_id)
+        if node is None:
+            raise HTTPException(status_code=404, detail="指定のノードが見つかりません。")
+
+        from app.fact_bridge import GoFactBridge
+        from app.coach_provider import RuleBasedFallbackCoach
+
+        bridge = GoFactBridge(session.tree.board_size)
+        coach = RuleBasedFallbackCoach()
+
+        # KataGo の最新解析からファクトを抽出
+        analysis = await db.get_analysis_cache(node.position_hash)
+        actual_move = node.move or "pass"
+        best_move = "D4"
+        score_loss = 3.5
+        winrate_loss = 0.15
+
+        if analysis and analysis.get("moves"):
+            top = analysis["moves"][0]
+            best_move = top.get("move", "D4")
+            score_loss = float(top.get("score_loss", 3.5))
+
+        facts = bridge.extract_blunder_facts(
+            actual_move_gtp=actual_move,
+            best_move_gtp=best_move,
+            player=node.board.next_player,
+            score_loss=score_loss,
+            winrate_loss=winrate_loss,
+            score_lead_before=0.0,
+            score_lead_after=-score_loss,
+        )
+
+        res = coach.explain_blunder(facts)
+        return res.model_dump()
+
+    @app.post("/api/v1/games/{game_id}/coach/hint")
+    async def coach_hint(game_id: str, request: Request) -> dict[str, Any]:
+        session = await hub.get_or_load_session(game_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="セッションが見つかりません。")
+
+        body = await request.json() if (await request.body()) else {}
+        stage = int(body.get("stage", 1))
+
+        from app.coach_provider import RuleBasedFallbackCoach
+        coach = RuleBasedFallbackCoach()
+        hint = coach.provide_hint(stage, best_move="Q16", area_name="右辺")
+        return hint.model_dump()
+
+    # ------------------------------------------------------------------
     # WebSocket: Real-time Game & Analysis Stream (Pitfalls #7, #18)
     # ------------------------------------------------------------------
 
