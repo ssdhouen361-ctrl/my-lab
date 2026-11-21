@@ -81,23 +81,6 @@
       </div>
     </main>
 
-    <!-- [2b] Mobile Variable Mini Info Strip (auto-hidden when height <= 750px) -->
-    <section id="mini-info-strip" aria-label="ミニ形勢情報" data-testid="mini-info-strip">
-      <button id="btn-mini-sparkline" class="mini-sparkline-btn" type="button" data-testid="btn-mini-sparkline">
-        <div class="mini-sparkline-header">
-          <span class="mini-sparkline-title">勝率推移</span>
-          <span id="mini-sparkline-wr" class="mini-sparkline-val">黒 50.0%</span>
-          <span class="mini-sparkline-hint">詳細 ›</span>
-        </div>
-        <svg id="mini-sparkline-svg" class="mini-sparkline-svg" viewBox="0 0 320 26" preserveAspectRatio="none" aria-hidden="true"></svg>
-      </button>
-      <div id="mini-cand-row" class="mini-cand-row" data-testid="mini-cand-row"></div>
-      <div id="mini-meta-row" class="mini-meta-row">
-        <span id="mini-captures-text" class="mini-captures-text">アゲハマ 黒:0 白:0 ・ コミ 6.5</span>
-        <span id="mini-flash-note" class="mini-flash-note" hidden></span>
-      </div>
-    </section>
-
     <!-- [3] Mobile State-Linked Fixed Action Bar (52px strict fixed height) -->
     <section id="action-bar" aria-label="操作バー" data-testid="action-bar">
       <div id="action-bar-normal" class="action-bar-pane">
@@ -125,6 +108,64 @@
           <button id="btn-ghost-cancel" class="btn-ghost-cancel" type="button" data-testid="btn-ghost-cancel">✕ 取消</button>
           <button id="btn-ghost-confirm" class="btn-ghost-confirm" type="button" data-testid="btn-ghost-confirm">✓ 着手確定</button>
         </div>
+      </div>
+    </section>
+
+    <!-- [2b] Mobile Variable Mini Info Strip (hidden in favor of integrated bottom sheet) -->
+    <section id="mini-info-strip" aria-label="ミニ形勢情報" data-testid="mini-info-strip" style="display: none !important;">
+      <button id="btn-mini-sparkline" class="mini-sparkline-btn" type="button" data-testid="btn-mini-sparkline">
+        <div class="mini-sparkline-header">
+          <span class="mini-sparkline-title">勝率推移</span>
+          <span id="mini-sparkline-wr" class="mini-sparkline-val">黒 50.0%</span>
+          <span class="mini-sparkline-hint">詳細 ›</span>
+        </div>
+        <svg id="mini-sparkline-svg" class="mini-sparkline-svg" viewBox="0 0 320 26" preserveAspectRatio="none" aria-hidden="true"></svg>
+      </button>
+      <div id="mini-cand-row" class="mini-cand-row" data-testid="mini-cand-row"></div>
+      <div id="mini-meta-row" class="mini-meta-row">
+        <span id="mini-captures-text" class="mini-captures-text">アゲハマ 黒:0 白:0 ・ コミ 6.5</span>
+        <span id="mini-flash-note" class="mini-flash-note" hidden></span>
+      </div>
+    </section>
+
+    <!-- [5] Mobile Integrated Fixed Window (Candidates / Graph / Gemini / Branches) -->
+    <section id="bottom-sheet" data-snap="docked" aria-label="詳細解析シート" data-testid="bottom-sheet">
+      <div id="sheet-handle" data-testid="sheet-handle">
+        <span id="sheet-title" class="sheet-title">解析・詳細</span>
+        <div class="sheet-drag-pill" aria-hidden="true"></div>
+        <div class="sheet-handle-actions">
+          <button id="btn-sheet-expand" class="icon-btn" type="button" aria-label="全画面切替" data-testid="btn-sheet-expand">⤢</button>
+          <button id="btn-sheet-close" class="icon-btn" type="button" aria-label="閉じる" data-testid="btn-sheet-close" style="display: none;">✕</button>
+        </div>
+      </div>
+
+      <div id="sheet-tabs" role="tablist" data-testid="sheet-tabs">
+        <button class="panel-tab is-active" type="button" role="tab" aria-selected="true" data-sheet-tab="candidates" data-testid="sheet-tab-candidates">候補手</button>
+        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="graph" data-testid="sheet-tab-graph">グラフ</button>
+        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="coach" data-testid="sheet-tab-coach">🤖Gemini</button>
+        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="branches" data-testid="sheet-tab-branches">分岐</button>
+      </div>
+
+      <div id="sheet-body" data-testid="sheet-body">
+        <div id="sheet-pane-candidates" class="panel-pane"></div>
+        <div id="sheet-pane-graph" class="panel-pane" hidden>
+          <div class="graph-toolbar">
+            <span id="sheet-graph-meta" class="graph-meta-text">勝率・目数推移（タップで移動）</span>
+            <div class="graph-toolbar-btns">
+              <button id="btn-graph-mode-sheet" class="compact-toggle-btn" type="button" data-testid="btn-graph-mode-sheet">勝率</button>
+              <button id="btn-heatmap-sheet" class="compact-toggle-btn" type="button" aria-pressed="false" data-testid="btn-heatmap-sheet">🗺地合い</button>
+            </div>
+          </div>
+          <svg id="sheet-eval-graph-svg" class="eval-graph-svg is-tall" viewBox="0 0 360 150" preserveAspectRatio="none" role="img" aria-label="評価推移グラフ"></svg>
+          <div id="sheet-graph-legend" class="graph-legend">
+            <span class="legend-item"><span class="badge-dot is-blunder"></span>大悪手</span>
+            <span class="legend-item"><span class="badge-dot is-mistake"></span>悪手</span>
+            <span class="legend-item"><span class="badge-dot is-inaccuracy"></span>疑問手</span>
+            <span class="legend-item"><span class="badge-dot is-good"></span>好手</span>
+          </div>
+        </div>
+        <div id="sheet-pane-coach" class="panel-pane" hidden></div>
+        <div id="sheet-pane-branches" class="panel-pane" hidden></div>
       </div>
     </section>
 
@@ -230,47 +271,6 @@
         <button id="btn-side-analyze" class="side-analyze-btn is-active" type="button" aria-pressed="true" data-testid="btn-side-analyze">✨検討</button>
       </div>
     </aside>
-
-    <!-- [5] Mobile Expandable Bottom Sheet (closed / docked / half 52dvh / full 84dvh) -->
-    <section id="bottom-sheet" data-snap="docked" aria-label="詳細解析シート" data-testid="bottom-sheet">
-      <div id="sheet-handle" data-testid="sheet-handle">
-        <span id="sheet-title" class="sheet-title">解析・詳細</span>
-        <div class="sheet-drag-pill" aria-hidden="true"></div>
-        <div class="sheet-handle-actions">
-          <button id="btn-sheet-expand" class="icon-btn" type="button" aria-label="全画面切替" data-testid="btn-sheet-expand">⤢</button>
-          <button id="btn-sheet-close" class="icon-btn" type="button" aria-label="閉じる" data-testid="btn-sheet-close">✕</button>
-        </div>
-      </div>
-
-      <div id="sheet-tabs" role="tablist" data-testid="sheet-tabs">
-        <button class="panel-tab is-active" type="button" role="tab" aria-selected="true" data-sheet-tab="candidates" data-testid="sheet-tab-candidates">候補手</button>
-        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="graph" data-testid="sheet-tab-graph">グラフ</button>
-        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="coach" data-testid="sheet-tab-coach">🤖Gemini</button>
-        <button class="panel-tab" type="button" role="tab" aria-selected="false" data-sheet-tab="branches" data-testid="sheet-tab-branches">分岐</button>
-      </div>
-
-      <div id="sheet-body" data-testid="sheet-body">
-        <div id="sheet-pane-candidates" class="panel-pane"></div>
-        <div id="sheet-pane-graph" class="panel-pane" hidden>
-          <div class="graph-toolbar">
-            <span id="sheet-graph-meta" class="graph-meta-text">勝率・目数推移（タップで移動）</span>
-            <div class="graph-toolbar-btns">
-              <button id="btn-graph-mode-sheet" class="compact-toggle-btn" type="button" data-testid="btn-graph-mode-sheet">勝率</button>
-              <button id="btn-heatmap-sheet" class="compact-toggle-btn" type="button" aria-pressed="false" data-testid="btn-heatmap-sheet">🗺地合い</button>
-            </div>
-          </div>
-          <svg id="sheet-eval-graph-svg" class="eval-graph-svg is-tall" viewBox="0 0 360 150" preserveAspectRatio="none" role="img" aria-label="評価推移グラフ"></svg>
-          <div id="sheet-graph-legend" class="graph-legend">
-            <span class="legend-item"><span class="badge-dot is-blunder"></span>大悪手</span>
-            <span class="legend-item"><span class="badge-dot is-mistake"></span>悪手</span>
-            <span class="legend-item"><span class="badge-dot is-inaccuracy"></span>疑問手</span>
-            <span class="legend-item"><span class="badge-dot is-good"></span>好手</span>
-          </div>
-        </div>
-        <div id="sheet-pane-coach" class="panel-pane" hidden></div>
-        <div id="sheet-pane-branches" class="panel-pane" hidden></div>
-      </div>
-    </section>
 
     <!-- Menu / Settings Modal -->
     <div id="menu-modal" class="modal-backdrop" hidden role="dialog" aria-modal="true" aria-label="設定・対局メニュー" data-testid="menu-modal">

@@ -572,13 +572,7 @@ export class UiShell {
     el.btnNext.addEventListener('click', () => this.navigateRelative(1));
     el.btnToggleAnalyze.addEventListener('click', () => this._onPrimaryAnalyzeOrHintClick());
     el.btnOpenSheet.addEventListener('click', () => {
-      if (this.state.sheetSnap === 'full') {
-        this.setSheetSnap('docked');
-      } else if (this.state.sheetSnap === 'half') {
-        this.setSheetSnap('full');
-      } else {
-        this.setSheetSnap('half');
-      }
+      this.setSheetSnap(this.state.sheetSnap === 'full' ? 'docked' : 'full');
     });
     if (el.btnReload) {
       el.btnReload.addEventListener('click', () => {
