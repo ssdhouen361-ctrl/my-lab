@@ -22,6 +22,18 @@
       overflow: hidden;
       overscroll-behavior: none;
     }
+    /* 強制スタイルオーバーライド（PWA/ブラウザのキャッシュ残りを即時上書き） */
+    .modal-card {
+      height: 85vh !important;
+      max-height: 85vh !important;
+    }
+    .modal-body {
+      flex: 1 1 0 !important;
+      overflow-y: auto !important;
+    }
+    .form-field.is-wide {
+      grid-column: 1 / -1 !important;
+    }
   </style>
   <link rel="stylesheet" href="/static/css/app.css?v=__BUILD_ID__">
 </head>
