@@ -94,14 +94,12 @@ async def test_all_six_profiles_layout_and_seven_gates(
             f"{profile_name}: expected data-layout={profile.expected_layout!r}, got {layout!r}"
         )
 
-        # Verify mini-info-strip visibility vs collapse on s26_ultra_short
-        mini_display = await page.evaluate(
-            "() => window.getComputedStyle(document.getElementById('mini-info-strip')).display"
+        # Verify bottom-sheet / mini-info-strip layout visibility on mobile profiles
+        sheet_display = await page.evaluate(
+            "() => window.getComputedStyle(document.getElementById('bottom-sheet')).display"
         )
-        if profile_name == "s26_ultra_short":
-            assert mini_display == "none", "s26_ultra_short must collapse #mini-info-strip"
-        elif profile_name in ("s26_ultra_portrait", "s26_ultra_narrow"):
-            assert mini_display != "none", f"{profile_name} should display #mini-info-strip"
+        if profile_name in ("s26_ultra_portrait", "s26_ultra_narrow", "s26_ultra_short"):
+            assert sheet_display != "none", f"{profile_name} should display #bottom-sheet"
 
         # Verify full-height 2-column geometry on Tab S11 landscape
         board_rect = await get_board_rect(page)

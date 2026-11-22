@@ -188,9 +188,9 @@ def live_server(tmp_path_factory: pytest.TempPathFactory) -> Iterator[RunningTes
         server.stop()
 
 
-@pytest_asyncio.fixture(scope="module")
+@pytest_asyncio.fixture(scope="function")
 async def playwright_browser() -> AsyncIterator[Any]:
-    """Module-scoped headless Chromium instance for Layer 2 E2E tests."""
+    """Function-scoped headless Chromium instance for Layer 2 E2E tests."""
     playwright_mod = pytest.importorskip("playwright.async_api")
     async with playwright_mod.async_playwright() as p:
         browser = await p.chromium.launch(headless=True)

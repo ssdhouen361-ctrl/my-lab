@@ -199,9 +199,9 @@ button:focus-visible {
 }
 
 .top-branch-btn {
-  min-height: 28px;
-  height: 28px;
-  padding: 0 8px;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 10px;
   font-size: 11px;
   font-weight: 700;
   background: rgba(16, 185, 129, 0.25);
@@ -360,10 +360,10 @@ button:focus-visible {
 
 .pill-action-btn {
   min-width: 44px;
-  min-height: 32px;
-  height: 32px;
-  padding: 0 8px;
-  font-size: 11px;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 10px;
+  font-size: 12px;
   font-weight: 700;
   background: rgba(21, 101, 192, 0.88);
   border-color: rgba(147, 197, 253, 0.45);
@@ -578,7 +578,7 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 8px;
 }
 
 .action-summary-text {
@@ -595,7 +595,7 @@ button:focus-visible {
 .action-inline-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 
@@ -984,7 +984,7 @@ button:focus-visible {
 .graph-toolbar-btns {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex-shrink: 0;
 }
 

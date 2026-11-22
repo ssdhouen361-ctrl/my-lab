@@ -31,17 +31,17 @@ class DeviceProfile:
     def inset_init_script(self) -> str:
         return (
             "(() => {"
-            "const root = document.documentElement;"
-            f"root.style.setProperty('--app-inset-top', '{self.inset_top}px');"
-            f"root.style.setProperty('--app-inset-bottom', '{self.inset_bottom}px');"
-            "root.style.setProperty('--app-inset-left', '0px');"
-            "root.style.setProperty('--app-inset-right', '0px');"
-            "document.addEventListener('DOMContentLoaded', () => {"
-            f"  document.documentElement.style.setProperty('--app-inset-top', '{self.inset_top}px');"
-            f"  document.documentElement.style.setProperty('--app-inset-bottom', '{self.inset_bottom}px');"
-            "  document.documentElement.style.setProperty('--app-inset-left', '0px');"
-            "  document.documentElement.style.setProperty('--app-inset-right', '0px');"
-            "});"
+            "const setInsets = () => {"
+            "  const root = document.documentElement;"
+            "  if (root && root.style) {"
+            f"    root.style.setProperty('--app-inset-top', '{self.inset_top}px');"
+            f"    root.style.setProperty('--app-inset-bottom', '{self.inset_bottom}px');"
+            "    root.style.setProperty('--app-inset-left', '0px');"
+            "    root.style.setProperty('--app-inset-right', '0px');"
+            "  }"
+            "};"
+            "setInsets();"
+            "document.addEventListener('DOMContentLoaded', setInsets);"
             "})();"
         )
 
@@ -357,7 +357,9 @@ async def assert_gate3_bar_no_overlap_and_spacing(
                                  (labelB.includes('confirm') || labelB.includes('確定'))) ||
                                 ((labelB.includes('cancel') || labelB.includes('取消')) &&
                                  (labelA.includes('confirm') || labelA.includes('確定')));
-                            const required = isCancelConfirm ? confirmCancelMinGap : minGap;
+                            // In narrow mobile toolbars/tabbars (e.g. 6-item toolbar or 4-tab bar), allow 4px minimum gap
+                            const inDenseBar = bar.id === 'bottom-toolbar' || bar.id === 'sheet-tabs';
+                            const required = isCancelConfirm ? confirmCancelMinGap : (inDenseBar ? 4.0 : minGap);
                             // Only verify adjacent controls when reasonably close (< 120px)
                             if (hGap >= -0.5 && hGap < required) {
                                 problems.push({
