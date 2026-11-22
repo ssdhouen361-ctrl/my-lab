@@ -962,14 +962,27 @@ button:focus-visible {
   font-size: 10px;
   color: var(--text-muted);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cand-pv-text::-webkit-scrollbar {
+  display: none;
+}
+
+.cand-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .cand-pv-btn {
-  min-width: 52px;
+  min-width: 44px;
   height: 44px;
-  padding: 0 8px;
+  padding: 0 6px;
   font-size: 11px;
   font-weight: 700;
   background: var(--bg-elevated);
@@ -981,6 +994,21 @@ button:focus-visible {
   background: #0284C7;
   border-color: #38BDF8;
   color: #FFFFFF;
+}
+
+.cand-branch-btn {
+  min-width: 52px;
+  height: 44px;
+  padding: 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: rgba(16, 185, 129, 0.18);
+  border-color: rgba(52, 211, 153, 0.6);
+  color: #A7F3D0;
+}
+
+.cand-branch-btn:hover {
+  background: rgba(16, 185, 129, 0.35);
 }
 
 /* SVG Evaluation Graph */

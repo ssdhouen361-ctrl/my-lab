@@ -235,6 +235,27 @@
     - 単体テスト（42/42 件）およびタッチ・Sペン・WebViewテストも全件 PASS。
     - Mac mini 本体のサービス（`launchd`）を再起動し、最新版コードで正常稼働中。
 
+  - **直近の改善（KataGo候補手のPV長大化・「打進む」検討譜分岐機能・試行回数表示）:**
+    - **PV（変化図）の長大化:**
+      - [goban-canvas.js](file:///Users/sasadayuto/my-lab/projects/web-goban/static/js/goban-canvas.js): 盤上に描画する変化図（PV）の最大手数をコンパクト時 `5 ➔ 10手`、通常時 `8 ➔ 15手` に拡大。
+      - [ui-shell.js](file:///Users/sasadayuto/my-lab/projects/web-goban/static/js/ui-shell.js): 候補手リスト内のPV着手系列テキスト表示を従来の6手から最大15手まで表示するよう拡張。
+      - [app.css](file:///Users/sasadayuto/my-lab/projects/web-goban/static/css/app.css): 長いPV表記がはみ出さないよう横スクロール（スクロールバー非表示）に対応。
+    - **試行回数（Visits）の明示表示:**
+      - [ui-shell.js](file:///Users/sasadayuto/my-lab/projects/web-goban/static/js/ui-shell.js): 各候補手カードの勝率・目数差の横に「(試行:◯◯回)」を明示表示。
+    - **変化図の続きから検討譜を打ち進める機能（「打進む」ボタン）の実装:**
+      - [ui-shell.js](file:///Users/sasadayuto/my-lab/projects/web-goban/static/js/ui-shell.js): 候補手カード右側に「PV▶（表示）」と並んで「打進む」ボタン（`.cand-branch-btn`）を追加。
+      - 「打進む」をタップすると、その候補手のPV変化図（最大15手）を400ms間隔で順次自動着手して新規分岐ノード（検討譜）をツリー上に生成・展開。
+      - 盤面が見えやすいよう自動でシートをドック位置（下部）へ調整し、展開完了時に「変化図の展開が完了しました。続けて検討譜を自由に着手できます。」とトースト案内を表示。
+      - 展開後はそのまま碁盤をタップして検討譜の続きを自由に着手・探索可能。
+    - **タッチ・ピンチズーム操作の安定化:**
+      - [input-controller.js](file:///Users/sasadayuto/my-lab/projects/web-goban/static/js/input-controller.js): 2本指ピンチ操作終了時のタップ誤認識防止ガード（200ms）を、指が1本離れた瞬間から確実に発動するよう修正。
+    - **Service Worker / キャッシュ更新:**
+      - [sw.js](file:///Users/sasadayuto/my-lab/projects/web-goban/static/sw.js): キャッシュバージョンを `v18` に更新。
+    - **テストプレイ・自動品質検証（E2E / 単体）:**
+      - Playwright E2E テスト（全6プロファイル・タッチ/Sペン操作・WebView同期含む11件）および単体テスト（42件）を全件実行し、**計53件すべて ALL PASS** を確認。
+    - **サーバー反映:**
+      - Mac mini の常駐サービス（`launchd: com.mylab.web-goban`）を kickstart 再起動し、最新版コードで正常稼働中。
+
 ### 次のタスク（ユーザー操作＆Phase 1-C / Phase 2）
 1. **Mac mini ターミナルで初回環境構築＆全層 QA 実行（ネットワーク・Metal GPU 解放環境）:**
    - `cd ~/my-lab/projects/web-goban && ./scripts/setup.sh && ./scripts/qa.sh all`

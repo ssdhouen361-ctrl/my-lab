@@ -862,7 +862,7 @@ export class GobanCanvas {
     if (!seq || !Array.isArray(seq.moves) || seq.moves.length === 0) return;
 
     const isCompact = this.cssSize < 520;
-    const defaultMax = isCompact ? 5 : 8;
+    const defaultMax = isCompact ? 10 : 15;
     const maxMoves = seq.maxMoves ?? defaultMax;
     const moves = seq.moves.slice(0, maxMoves);
     let color = seq.startPlayer || this.nextPlayer || 'B';

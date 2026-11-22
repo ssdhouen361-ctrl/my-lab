@@ -720,9 +720,9 @@ export class InputController {
     if (!wasTracked) return;
 
     if (this.state === 'PINCH_ZOOMING') {
+      this.pinchGuardUntil = performance.now() + this.settings.pinchGuardMs;
       if (this.activeTouches.size === 0) {
         this.pinchStart = null;
-        this.pinchGuardUntil = performance.now() + this.settings.pinchGuardMs;
         this.state = this.lockedGhost ? 'TOUCH_GHOST_LOCKED' : 'IDLE';
       }
       return;

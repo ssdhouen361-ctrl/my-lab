@@ -1013,6 +1013,37 @@ export class UiShell {
     this._renderMiniInfoStrip();
   }
 
+  playCandidatePv(moveGtp) {
+    const upper = String(moveGtp || '').toUpperCase();
+    if (!upper) return;
+    const cand = (this.state.analysis.moves || []).find((m) => m.move === upper);
+    if (!cand || !Array.isArray(cand.pv) || cand.pv.length === 0) {
+      this.showToast('候補手の変化図（PV）がありません');
+      return;
+    }
+
+    if (this._pvPlaybackTimer) {
+      clearTimeout(this._pvPlaybackTimer);
+      this._pvPlaybackTimer = null;
+    }
+
+    // Cancel pinned PV display and close sheet to let user see the board
+    this.state.pinnedPvMove = null;
+    this.canvas.setDynamicState({ pvSequence: null });
+    if (this.state.sheetSnap === 'full') {
+      this.setSheetSnap('docked');
+    }
+
+    // Store queue of PV moves to be played in sequence: [mv1, mv2, ...]
+    const pvMoves = [...cand.pv];
+    const firstMove = pvMoves.shift();
+    this.state.pendingPvQueue = pvMoves;
+
+    // Send first move to create/enter the branch
+    this.submitMove(firstMove);
+    this.showToast(`変化図を分岐譜として打ち進めます (${cand.pv.length}手)`);
+  }
+
   // --- Sheet & Modal Navigation ---
 
   setSheetSnap(snap) {
@@ -1127,6 +1158,13 @@ export class UiShell {
     this.state.hoveredCandidate = null;
     this.state.hintBox = null;
     this.canvas.setDynamicState({ pvSequence: null, hintBox: null });
+
+    // Clear any active automated PV playback when user plays a manual move
+    if (this._pvPlaybackTimer) {
+      clearTimeout(this._pvPlaybackTimer);
+      this._pvPlaybackTimer = null;
+    }
+    this.state.pendingPvQueue = null;
 
     const sent = this.ws.send(
       'play_move',
@@ -1484,6 +1522,24 @@ export class UiShell {
             this._renderAllGraphs();
           }
           this._renderBranchesAndGame();
+        }
+
+        // Process PV sequential auto-playback if active
+        if (
+          Array.isArray(this.state.pendingPvQueue) &&
+          this.state.pendingPvQueue.length > 0 &&
+          payload.actor_client_id === this.ws.clientId
+        ) {
+          const nextPvMove = this.state.pendingPvQueue.shift();
+          this._pvPlaybackTimer = setTimeout(() => {
+            this.submitMove(nextPvMove);
+          }, 400);
+        } else if (
+          Array.isArray(this.state.pendingPvQueue) &&
+          this.state.pendingPvQueue.length === 0
+        ) {
+          this.state.pendingPvQueue = null;
+          this.showToast('変化図の展開が完了しました。続けて検討譜を自由に着手できます。');
         }
         if (
           this.state.mode === 'play' &&
@@ -2181,6 +2237,12 @@ export class UiShell {
           this.pinCandidatePv(btn.dataset.pinPv);
         });
       });
+      container.querySelectorAll('[data-branch-pv]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          this.playCandidatePv(btn.dataset.branchPv);
+        });
+      });
     }
   }
 
@@ -2203,9 +2265,11 @@ export class UiShell {
         const wrSide = (this.state.nextPlayer === 'W' ? 1 - c.winrate_black : c.winrate_black) * 100;
         const leadStr = this._formatScoreLead(c.score_lead_black);
         const lossStr = idx === 0 || loss < 0.05 ? '最善' : `-${loss.toFixed(1)}目`;
-        const pvStr = (c.pv || []).slice(0, 6).join('→');
+        const pvList = c.pv || [];
+        const pvStr = pvList.slice(0, 15).join('→');
         const isPinned = this.state.pinnedPvMove === c.move;
         const isHovered = this.state.hoveredCandidate && this.state.hoveredCandidate.move === c.move;
+        const visitsLabel = Number.isFinite(c.visits) ? `試行:${c.visits}回` : '';
         return `
           <div class="cand-row${isPinned || isHovered ? ' is-active' : ''}">
             <div class="cand-row-main">
@@ -2215,13 +2279,18 @@ export class UiShell {
                 <span class="cand-move">${escapeHtml(c.move)}</span>
                 <span class="cand-metric">${wrSide.toFixed(1)}%</span>
                 <span class="cand-metric is-score">${escapeHtml(leadStr)}</span>
-                <span class="cand-visits">${escapeHtml(lossStr)}${c.visits ? ` (${c.visits}v)` : ''}</span>
+                <span class="cand-visits">${escapeHtml(lossStr)}${visitsLabel ? ` (${visitsLabel})` : ''}</span>
               </div>
-              <div class="cand-pv-text">${escapeHtml(pvStr)}</div>
+              <div class="cand-pv-text" title="${escapeHtml(pvStr)}">${escapeHtml(pvStr)}</div>
             </div>
-            <button type="button" class="cand-pv-btn${isPinned ? ' is-pinned' : ''}" data-pin-pv="${escapeHtml(c.move)}">
-              ${isPinned ? 'PV中' : 'PV▶'}
-            </button>
+            <div class="cand-btn-group">
+              <button type="button" class="cand-pv-btn${isPinned ? ' is-pinned' : ''}" data-pin-pv="${escapeHtml(c.move)}" title="碁盤上で変化図をプレビュー表示">
+                ${isPinned ? '表示中' : 'PV▶'}
+              </button>
+              <button type="button" class="cand-branch-btn" data-branch-pv="${escapeHtml(c.move)}" title="この変化図を分岐譜として打ち進める">
+                打進む
+              </button>
+            </div>
           </div>
         `;
       })
