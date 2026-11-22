@@ -106,7 +106,7 @@ def render_all_themes():
     font_path = "/System/Library/Fonts/Supplemental/DIN Alternate Bold.ttf"
     title_font_path = "/System/Library/Fonts/SFNS.ttf"
     
-    number_font = ImageFont.truetype(font_path, 110)
+    number_font = ImageFont.truetype(font_path, 150)  # Enlarged from 110 to 150pt
     label_font = ImageFont.truetype(title_font_path, 22)
     small_tag_font = ImageFont.truetype(title_font_path, 17)
 
@@ -174,7 +174,7 @@ def render_all_themes():
         draw.text((center_x, center_y + WATCH_SIZE // 2 - 5), t["name"],
                   fill=(190, 195, 205), font=small_tag_font, anchor="mm")
 
-    out_path = Path("/Users/sasadayuto/my-lab/projects/galaxy-watch-timer/docs/mockups/tactictap_all_6_themes.jpg")
+    out_path = Path("/Users/sasadayuto/my-lab/projects/galaxy-watch-timer/docs/mockups/tactictap_all_6_themes_large.jpg")
     out_path.parent.mkdir(parents=True, exist_ok=True)
     canvas.save(str(out_path), quality=95)
     print("Saved:", out_path)
