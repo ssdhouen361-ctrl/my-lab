@@ -28,7 +28,11 @@ if not TOKEN:
     if fallback_env.exists():
         TOKEN = dotenv_values(fallback_env).get("DISCORD_BOT_TOKEN")
 
-TARGET_CHANNEL = os.getenv("DISCORD_CHANNEL_NAME", "gemini-agent")
+# 監視対象チャンネル名（カンマ区切りまたはプレフィックス対応）
+# 例: DISCORD_CHANNEL_NAME="gemini-agent,gemini-agent-2,gemini-sub" または "gemini-" で始まる全チャンネル
+_raw_channels = os.getenv("DISCORD_CHANNEL_NAME", "gemini-agent").strip()
+TARGET_CHANNELS: set[str] = {c.strip() for c in _raw_channels.split(",") if c.strip()}
+TARGET_CHANNEL_PREFIX = os.getenv("DISCORD_CHANNEL_PREFIX", "gemini-").strip()
 AGY_BIN = os.getenv("AGY_BIN", "/Users/sasadayuto/.local/bin/agy")
 AGY_MODE = os.getenv("AGY_MODE", "accept-edits")
 AGY_TIMEOUT_SECONDS = int(os.getenv("AGY_TIMEOUT_SECONDS", "900"))
@@ -219,12 +223,23 @@ def save_conversations(data: dict[str, str]) -> None:
     )
 
 
+def is_channel_name_matched(name: Optional[str]) -> bool:
+    """チャンネル名が監視対象（完全一致またはプレフィックス gemini-）に合致するか判定する"""
+    if not name:
+        return False
+    if name in TARGET_CHANNELS:
+        return True
+    if TARGET_CHANNEL_PREFIX and name.startswith(TARGET_CHANNEL_PREFIX):
+        return True
+    return False
+
+
 def is_target_channel(channel: discord.abc.Messageable) -> bool:
-    """監視対象チャンネル(#gemini-agent)またはその配下のスレッドかを判定する"""
+    """監視対象チャンネル（またはその配下のスレッド）かを判定する"""
     if isinstance(channel, discord.Thread):
         parent = channel.parent
-        return parent is not None and getattr(parent, "name", None) == TARGET_CHANNEL
-    return getattr(channel, "name", None) == TARGET_CHANNEL
+        return parent is not None and is_channel_name_matched(getattr(parent, "name", None))
+    return is_channel_name_matched(getattr(channel, "name", None))
 
 
 def is_authorized_user(message: discord.Message) -> bool:
@@ -644,9 +659,10 @@ async def on_ready():
     init_next_bg_job_id()
     bg_timeout_label = "無制限" if AGY_BG_TIMEOUT_SECONDS == 0 else f"{AGY_BG_TIMEOUT_SECONDS}秒"
     ms = load_model_settings()
+    target_desc = f"{', '.join(sorted(TARGET_CHANNELS))}（または '{TARGET_CHANNEL_PREFIX}*' で始まるチャンネル・スレッド）"
     print("==========================================")
     print(f"✅ Discord AIエージェント起動: {client.user}")
-    print(f"👀 監視チャンネル: #{TARGET_CHANNEL}（およびそのスレッド）")
+    print(f"👀 監視チャンネル: {target_desc}")
     print(f"📁 作業リポジトリ: {REPO_DIR}")
     print(f"🤖 実行コマンド: {AGY_BIN} (mode={AGY_MODE}, sandbox=True)")
     print(f"🧠 表チャット設定: {format_model_profile(ms['main_model'], ms['main_effort'])}")
