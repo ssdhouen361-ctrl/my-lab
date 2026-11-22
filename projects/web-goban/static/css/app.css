@@ -560,14 +560,13 @@ button:focus-visible {
   }
 }
 
-/* [3] Mobile State-Linked Action Bar (STRICTLY 52px fixed) */
+/* [3] Mobile State-Linked Action Bar (Compact 40px) */
 #action-bar {
-  flex: 0 0 52px;
-  height: 52px;
-  margin-top: auto;
+  flex: 0 0 40px;
+  height: 40px;
   background: var(--bg-surface);
   box-shadow: inset 0 1px 0 var(--border-subtle);
-  padding: 4px 10px;
+  padding: 2px 10px;
   display: flex;
   align-items: center;
   overflow: hidden;
@@ -579,13 +578,13 @@ button:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
+  gap: 6px;
 }
 
 .action-summary-text {
   flex: 1 1 0;
   min-width: 0;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--text-primary);
   white-space: nowrap;
@@ -596,7 +595,7 @@ button:focus-visible {
 .action-inline-group {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
 }
 
@@ -755,11 +754,12 @@ button:focus-visible {
   border-radius: 12px 12px 0 0;
 }
 
+/* 広げた時（full）: 画面上部50%に留め、碁盤の上半分が常に見える状態を維持 */
 #bottom-sheet[data-snap="full"] {
   position: fixed;
   left: var(--inset-left);
   right: var(--inset-right);
-  top: var(--inset-top);
+  top: 48dvh;
   bottom: calc(56px + var(--inset-bottom));
   height: auto;
   max-height: none;
@@ -769,46 +769,52 @@ button:focus-visible {
 }
 
 #sheet-handle {
-  flex: 0 0 44px;
-  height: 44px;
+  flex: 0 0 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 2px 8px 2px 14px;
+  gap: 6px;
+  padding: 0 8px 0 12px;
   box-shadow: inset 0 -1px 0 var(--border-subtle);
   touch-action: none;
   cursor: pointer;
 }
 
 .sheet-title {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
 .sheet-drag-pill {
-  width: 38px;
-  height: 4px;
+  width: 32px;
+  height: 3px;
   border-radius: 99px;
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.25);
   flex-shrink: 0;
 }
 
 .sheet-handle-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+}
+
+.sheet-handle-actions .icon-btn {
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
 }
 
 #sheet-tabs {
-  flex: 0 0 48px;
-  height: 48px;
+  flex: 0 0 34px;
+  height: 34px;
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  padding: 2px 8px;
+  gap: 6px;
+  padding: 2px 6px;
   box-shadow: inset 0 -1px 0 var(--border-subtle);
 }
 
@@ -817,7 +823,7 @@ button:focus-visible {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 10px 12px calc(12px + var(--inset-bottom));
+  padding: 6px 8px calc(8px + var(--inset-bottom));
 }
 
 /* Tablet Side Panel (hidden on mobile portrait) */
@@ -831,8 +837,15 @@ button:focus-visible {
 
 .panel-tab {
   width: 100%;
-  height: 44px;
-  padding: 0 6px;
+  height: 30px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  background: var(--bg-base);
+  border-color: var(--border-subtle);
+  color: var(--text-secondary);
+}
   font-size: 12px;
   font-weight: 700;
   background: var(--bg-base);

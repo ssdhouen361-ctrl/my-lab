@@ -182,7 +182,10 @@
   - `app/coach_provider.py`: 決定論的オフライン・ルールベースフォールバックコーチ（`RuleBasedFallbackCoach`）を実装。
   - `app/main.py`: `POST /api/v1/games/{game_id}/coach/explain`（悪手解説）および `hint`（段階ヒント）REST エンドポイントを追加。
   - `static/js/ui-shell.js`: 「🤖Gemini」タブ内に「❓ なぜ悪手・損失？」「💡 次の一手ヒント」ボタンを配置し、API から受信した解説カードや方針ヒント、思考の問いかけ、音声読み上げ（TTS）への連動を実装。
-  - `static/sw.js`: キャッシュバージョンを `v11` に更新。
+  - `static/css/app.css`:
+    - S26 Ultra 縦画面での「解析・詳細」ウィンドウの高さとヘッダー（44px ➔ 32px）、タブバー（48px ➔ 34px、タブボタン 44px ➔ 30px）をスリムに凝縮しスマート化。
+    - ウィンドウ最大化（広げた）時にも、画面下半分（`top: 48dvh`）に展開するよう調整し、碁盤が隠れず常に盤面と解説を同時に見渡せるレイアウトに改良。
+  - `static/sw.js`: キャッシュバージョンを `v12` に更新。
   - `tests/unit/test_coach_and_facts.py`: ファクト抽出およびフォールバック解説の単体テストを整備し全件 PASS。
 
 ### 次のタスク（ユーザー操作＆Phase 1-C / Phase 2）
