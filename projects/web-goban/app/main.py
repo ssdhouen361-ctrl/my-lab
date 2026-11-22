@@ -605,7 +605,8 @@ def create_app(
         coach = RuleBasedFallbackCoach()
 
         # KataGo の最新解析からファクトを抽出
-        analysis = await db.get_analysis_cache(node.position_hash)
+        pos_hash = session.tree.position_hash(node.node_id)
+        analysis = await db.get_analysis_cache(pos_hash)
         actual_move = node.move or "pass"
         best_move = "D4"
         score_loss = 3.5

@@ -420,6 +420,24 @@
               <button id="btn-engine-stop" class="secondary-btn is-danger" type="button" data-testid="btn-engine-stop">⏹ 停止</button>
             </div>
           </section>
+
+          <!-- App Information & Versions -->
+          <section class="modal-section">
+            <h3 class="modal-section-title">アプリ情報・バージョン</h3>
+            <div class="info-kv-grid" style="margin-bottom: 10px;">
+              <span class="info-kv-label">アプリ名称</span>
+              <span class="info-kv-val">AetherGo (Web 碁盤)</span>
+              <span class="info-kv-label">クライアント版</span>
+              <span id="version-client-val" class="info-kv-val">v1.0.0 (__BUILD_ID__)</span>
+              <span class="info-kv-label">サーバービルド</span>
+              <span id="version-server-val" class="info-kv-val">確認中…</span>
+              <span class="info-kv-label">実行環境</span>
+              <span id="version-runtime-val" class="info-kv-val">ブラウザ / PWA</span>
+            </div>
+            <div class="modal-btn-row">
+              <button id="btn-force-reload" class="secondary-btn" type="button" data-testid="btn-force-reload" style="flex: 1;">🔄 強制再読み込み (キャッシュクリア)</button>
+            </div>
+          </section>
         </div>
       </div>
     </div>

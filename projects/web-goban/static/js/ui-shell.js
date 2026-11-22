@@ -454,6 +454,11 @@ export class UiShell {
       btnFullReview: byId('btn-full-review'),
       btnEngineStop: byId('btn-engine-stop'),
 
+      versionClientVal: byId('version-client-val'),
+      versionServerVal: byId('version-server-val'),
+      versionRuntimeVal: byId('version-runtime-val'),
+      btnForceReload: byId('btn-force-reload'),
+
       toast: byId('toast'),
     };
   }
@@ -755,6 +760,26 @@ export class UiShell {
         this.showToast('サーバー未接続のため一括検討できません');
       }
     });
+
+    // App Information & Force Cache Clear
+    if (el.btnForceReload) {
+      el.btnForceReload.addEventListener('click', async () => {
+        this.showToast('キャッシュを消去して再読み込み中…');
+        try {
+          if (typeof caches !== 'undefined') {
+            const keys = await caches.keys();
+            await Promise.all(keys.map((k) => caches.delete(k)));
+          }
+          if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+            const regs = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(regs.map((r) => r.unregister()));
+          }
+        } catch {
+          // ignore
+        }
+        window.location.reload(true);
+      });
+    }
   }
 
   _loadSavedSettings() {
@@ -995,6 +1020,9 @@ export class UiShell {
     const wasHidden = this.state.sheetSnap === 'closed';
     this.state.sheetSnap = valid;
     this.el.bottomSheet.dataset.snap = valid;
+    if (this.el.app) {
+      this.el.app.classList.toggle('sheet-full', valid === 'full');
+    }
     this.el.btnSheetExpand.textContent = valid === 'full' ? '⤡' : '⤢';
     if (wasHidden && valid !== 'closed' && valid !== 'docked') {
       PlatformBridge.pushUiOverlayHistory('sheet');
@@ -1002,6 +1030,10 @@ export class UiShell {
     if (valid !== 'closed') {
       this._renderSheetPanes();
     }
+    // Recompute board canvas size when sheet expansion changes board-stage size
+    requestAnimationFrame(() => {
+      this._resizeBoardFromStage();
+    });
   }
 
   setSheetTab(tab) {
@@ -1039,6 +1071,32 @@ export class UiShell {
     if (this.state.menuOpen) {
       PlatformBridge.pushUiOverlayHistory('menu');
       this.refreshEngineStatus();
+      this.refreshAppVersionInfo();
+    }
+  }
+
+  async refreshAppVersionInfo() {
+    if (this.el.versionRuntimeVal) {
+      const rt = PlatformBridge.runtime;
+      this.el.versionRuntimeVal.textContent =
+        rt === 'android-webview'
+          ? '📱 Android 専用アプリ (AetherGo)'
+          : rt === 'pwa'
+            ? '📲 PWA インストール版'
+            : '🌐 Web ブラウザ版';
+    }
+    if (this.el.versionServerVal) {
+      try {
+        const res = await fetch('/api/v1/health');
+        if (res.ok) {
+          const data = await res.json();
+          this.el.versionServerVal.textContent = `v${data.api_version || '1.0'} (${data.build_id || 'ok'})`;
+        } else {
+          this.el.versionServerVal.textContent = '接続エラー';
+        }
+      } catch {
+        this.el.versionServerVal.textContent = 'オフライン';
+      }
     }
   }
 

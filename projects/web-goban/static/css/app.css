@@ -754,7 +754,7 @@ button:focus-visible {
   border-radius: 12px 12px 0 0;
 }
 
-/* 広げた時（full）: 画面上部50%に留め、碁盤の上半分が常に見える状態を維持 */
+/* 広げた時（full）: 碁盤上部52%を確保しつつ下部シートを配置 */
 #bottom-sheet[data-snap="full"] {
   position: fixed;
   left: var(--inset-left);
@@ -766,6 +766,19 @@ button:focus-visible {
   z-index: 80;
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.7);
+}
+
+/* 碁盤ステージの縮小（fullスナップ時）: 碁盤全体（1〜19路）が上部にすっぽり収まる */
+#app:has(#bottom-sheet[data-snap="full"]) #board-stage,
+#app.sheet-full #board-stage {
+  --board-sz: min(
+    calc(100vw - var(--inset-left) - var(--inset-right) - 16px),
+    calc(48dvh - var(--inset-top) - 52px)
+  );
+  width: var(--board-sz);
+  height: var(--board-sz);
+  aspect-ratio: auto;
+  transition: width 0.2s ease, height 0.2s ease;
 }
 
 #sheet-handle {
@@ -823,7 +836,7 @@ button:focus-visible {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 6px 8px calc(8px + var(--inset-bottom));
+  padding: 6px 8px calc(72px + var(--inset-bottom));
 }
 
 /* Tablet Side Panel (hidden on mobile portrait) */
