@@ -170,9 +170,10 @@
   - 着手やノード移動時にブラウザURLへ `?game=...&node=...&move=...` をリアルタイム反映。
   - 更新ボタン押下時やリロード時に、直前の分岐先・手番がそのまま復元されるよう改善。
 - **ServiceWorker キャッシュ更新:** バージョンを `v10` に更新し、スマホ実機の再読み込みで新レイアウトが即座に反映されるよう設定。
-- **Android 専用アプリ版（極薄 WebView ラッパー）の構築:**
+- **Android 専用アプリ版（極薄 WebView ラッパー）の構築 & アプリ名「AetherGo」への刷新:**
   - `projects/web-goban/android/` 配下に Kotlin + Android Gradle プロジェクトを作成。
-  - ブラウザのアドレスバー・タブバーを完全に消去した没入型フルスクリーン（`Theme.DeviceDefault.NoActionBar.Fullscreen`）を実現。
+  - アプリ表示名をスマートで洗練された **「AetherGo（イーサー・ゴー）」** に変更。
+  - 起動時のクラッシュ防止（テーマ設定を AppCompat 互換の `Theme.DeviceDefault.NoActionBar` に最適化、例外キャッチとエラー画面の追加）を実施。
   - フロントエンドの `PlatformBridge`（`WebGobanNative`）と連動し、Android のシステム「戻る」ジェスチャー（詳細ウィンドウ閉じる ➔ 仮置き取消 ➔ 1手戻る）および常時点灯（`FLAG_KEEP_SCREEN_ON`）、ハプティクス（微小振動）、SGF 共有インテント受付を実装。
   - `.github/workflows/build-web-goban-apk.yml` を整備し、コミット時に GitHub Actions 上で自動ビルドされ、GitHub Releases（タグ: `web-goban-latest`）から `.apk` を直接ダウンロードできるように自動化。
 - **Phase 2（Gemini AI コーチ基盤）の先行着手＆UIエンドポイント接続:**

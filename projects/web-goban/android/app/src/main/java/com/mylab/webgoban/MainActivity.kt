@@ -29,25 +29,22 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // フルスクリーン・常時点灯の初期設定
-        window.decorView.systemUiVisibility = (
-            View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-            or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-        )
+        try {
+            webView = WebView(this)
+            setContentView(webView)
 
-        webView = WebView(this)
-        setContentView(webView)
+            setupWebView()
+            setupBackHandler()
 
-        setupWebView()
-        setupBackHandler()
+            // サーバーURL読み込み
+            val targetUrl = intent.getStringExtra("SERVER_URL") ?: BuildConfig.DEFAULT_SERVER_URL
+            webView.loadUrl(targetUrl)
 
-        // サーバーURL読み込み
-        val targetUrl = intent.getStringExtra("SERVER_URL") ?: BuildConfig.DEFAULT_SERVER_URL
-        webView.loadUrl(targetUrl)
-
-        // 共有インテント（SGFやテキスト）の処理
-        handleIncomingIntent(intent)
+            // 共有インテント（SGFやテキスト）の処理
+            handleIncomingIntent(intent)
+        } catch (e: Exception) {
+            Toast.makeText(this, "起動エラー: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     private fun setupWebView() {
@@ -66,6 +63,16 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
                 return false
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                super.onReceivedError(view, errorCode, description, failingUrl)
+                showNetworkErrorPage(description ?: "接続に失敗しました")
             }
 
             override fun onPageFinished(view: WebView?, url: String?) {
@@ -112,6 +119,52 @@ class MainActivity : AppCompatActivity() {
             })();
         """.trimIndent()
         webView.evaluateJavascript(script, null)
+    }
+
+    private fun showNetworkErrorPage(errMsg: String) {
+        val html = """
+            <!DOCTYPE html>
+            <html lang="ja">
+            <head>
+                <meta charset="utf-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body {
+                        background: #1A1D21;
+                        color: #E2E8F0;
+                        font-family: sans-serif;
+                        display: flex;
+                        flex-direction: column;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100vh;
+                        margin: 0;
+                        padding: 24px;
+                        box-sizing: border-box;
+                        text-align: center;
+                    }
+                    h2 { font-size: 20px; color: #F87171; margin-bottom: 8px; }
+                    p { font-size: 14px; color: #94A3B8; margin-bottom: 24px; line-height: 1.6; }
+                    button {
+                        background: #1565C0;
+                        color: #FFFFFF;
+                        border: none;
+                        padding: 12px 24px;
+                        font-size: 15px;
+                        font-weight: bold;
+                        border-radius: 8px;
+                        cursor: pointer;
+                    }
+                </style>
+            </head>
+            <body>
+                <h2>サーバーに接続できません</h2>
+                <p>Mac mini または Tailscale への接続を確認してください。<br><small style="color:#64748B;">($errMsg)</small></p>
+                <button onclick="location.reload()">再読み込み</button>
+            </body>
+            </html>
+        """.trimIndent()
+        webView.loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
     }
 
     override fun onNewIntent(intent: Intent) {

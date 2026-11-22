@@ -50,9 +50,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: web-goban-latest
-          name: "📱 Web 碁盤 Android アプリ (最新版 APK)"
+          name: "📱 AetherGo Android アプリ (最新版 APK)"
           body: |
-            Galaxy S26 Ultra / Galaxy Tab S11 用の Web 碁盤専用 Android アプリ（薄型 WebView ラッパー）です。
+            Galaxy S26 Ultra / Galaxy Tab S11 用の AI 囲碁アプリ「AetherGo」（最新版 APK）です。
             ブラウザのアドレスバーなし全画面・システム戻るジェスチャー連動・常時点灯に対応しています。
             下の **Assets** から `web-goban.apk` をタップしてダウンロード・インストールしてください。
           files: projects/web-goban/android/web-goban.apk
