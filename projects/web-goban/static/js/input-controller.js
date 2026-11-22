@@ -231,11 +231,15 @@ export class InputController {
   _shouldUseDirectPlay(pointerType) {
     const mode = this.settings.inputMode;
     if (mode === 'always_direct') return true;
-    if (mode === 'always_ghost' || mode === 'retap') return false;
-    // 'auto' mode: 指・ペンともにユーザー選択設定（reTapConfirm / inputMode）に従う
-    if (pointerType === 'pen' && this.settings.reTapConfirm) {
-      return false;
+    if (mode === 'always_ghost') return false;
+    // 'auto' mode or default: ペンは直接着手（スマホ幅でpenGhostOnMobile有効時を除く）
+    if (pointerType === 'pen') {
+      if (this.settings.penGhostOnMobile && typeof window !== 'undefined' && window.innerWidth < 600) {
+        return false;
+      }
+      return true;
     }
+    if (mode === 'retap') return false;
     if (pointerType === 'mouse') {
       return true;
     }
@@ -609,6 +613,11 @@ export class InputController {
       if (dist > this.settings.dragThresholdPx) {
         if (this.canvas.zoom > 1.001) {
           this.state = 'PANNING';
+          if (this.panStart) {
+            const dx = e.clientX - this.panStart.clientX;
+            const dy = e.clientY - this.panStart.clientY;
+            this.canvas.setZoomPan(this.canvas.zoom, this.panStart.panX + dx, this.panStart.panY + dy);
+          }
         } else {
           this.state = 'TOUCH_GHOST_DRAGGING';
           this.activeDragPointerId = e.pointerId;
