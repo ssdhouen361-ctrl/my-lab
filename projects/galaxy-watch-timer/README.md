@@ -17,8 +17,13 @@
 
 ## 2. カラーパレット・デザイン仕様（背景×文字の極上2色構成）
 
-![TacTicTap Watch UI Mockup](docs/mockups/tictactap_watch_mockup.jpg)
+### ダークテーマ（OLED省電力・夜間向け）
+![TacTicTap Watch UI Mockup (Dark)](docs/mockups/tictactap_watch_mockup.jpg)
 *(左: ネオンオレンジ "33:24" / 中央: エレクトリックグリーン "15:00" / 右: モノクロ "05:00")*
+
+### ライトテーマ＆操作中画面（日中・屋外高視認性）
+![TacTicTap Watch UI Mockup (Light & Setup)](docs/mockups/tictactap_light_mockup.jpg)
+*(左: 設定操作中画面（上部2/3: +1領域 / 下部1/3: -1領域） / 中央: カウントダウン中（ライトグリーン） / 右: 桁送りスワイプ（ライトモノクロ）)*
 
 ウォッチの有機EL（OLED）ディスプレイの省電力性・高コントラスト・屋外視認性を極限まで高めるため、**無駄な装飾を一切排除した「背景 × 文字」の2色構成**を基本とします。
 
