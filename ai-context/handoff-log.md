@@ -131,7 +131,7 @@
 
 ---
 
-## 進行中プロジェクト（Phase 1 実装完了）: スマホ・タブレット対応 Web 碁盤 (`web-goban`)
+## 完了・実用化プロジェクト: スマホ・タブレット対応 Web 碁盤・検討AI (`web-goban` / AetherGo)
 
 - **統合設計書:** [docs/web-goban-design.md](../docs/web-goban-design.md)
 - **手順書:** [projects/web-goban/README.md](../projects/web-goban/README.md)
@@ -139,8 +139,13 @@
 - **フロントエンド本体:** [projects/web-goban/static/index.html](../projects/web-goban/static/index.html)
 - **KataGo 設定:** [projects/web-goban/config/katago_analysis.cfg](../projects/web-goban/config/katago_analysis.cfg)
 - **セットアップ＆QA スクリプト:** [projects/web-goban/scripts/setup.sh](../projects/web-goban/scripts/setup.sh) / [projects/web-goban/scripts/qa.sh](../projects/web-goban/scripts/qa.sh)
-- **常駐設定テンプレート:** [projects/web-goban/com.mylab.web-goban.plist](../projects/web-goban/com.mylab.web-goban.plist)
-- **最終更新:** 2026-11-21
+- **常駐設定:** `~/Library/LaunchAgents/com.mylab.web-goban.plist`（Mac mini `gui/501/com.mylab.web-goban` にて常駐稼働中）
+- **最終更新:** 2026-11-23
+
+### プロジェクト概要と実用化ステータス
+- **ステータス:** **実用圏内到達によりクローズ（完了・運用中）**
+- Galaxy S26 Ultra（スマートフォン縦画面）および Galaxy Tab S11（タブレット横・縦画面）から、Tailscale 経由でストレスなく KataGo 高精度AI解析・検討・分岐作成・Geminiコーチ解説・音声読み上げが利用可能な状態を達成。
+- 今後新たなアイデアや要望が出た場合は、改善案メモ（下記）に追加して適宜バージョンアップを行う方針。
 
 ### 実装・検証済みの内容（Phase 1：Step 1-A / Step 1-B / Layer 1〜3 QA 基盤）
 1. **Step 1-A（バックエンド土台）:**
@@ -256,9 +261,9 @@
     - **サーバー反映:**
       - Mac mini の常駐サービス（`launchd: com.mylab.web-goban`）を kickstart 再起動し、最新版コードで正常稼働中。
 
-### 次のタスク（ユーザー操作＆Phase 1-C / Phase 2）
-1. **Mac mini ターミナルで初回環境構築＆全層 QA 実行（ネットワーク・Metal GPU 解放環境）:**
-   - `cd ~/my-lab/projects/web-goban && ./scripts/setup.sh && ./scripts/qa.sh all`
-   - 実機 KataGo スモークも確認する場合：`./scripts/qa.sh live`
-2. **Step 1-C（常駐＆HTTPS PWA 化＋実機 5 分確認）:** `launchd` 登録・`tailscale serve --bg http://127.0.0.1:8090`・Galaxy S26 Ultra / Tab S11 で実機チェック。
-3. **Phase 2（Gemini AI 囲碁コーチ実装）:** `GoFactBridge`・統一 `is_garbage_time`・`CoachProvider`（隔離 `agy` CLI ＋ `--json-schema` ＋ 4 層ハルシネーション防御）の実装。
+### 今後の改善案・アイデアメモ（次回アップデート用）
+- 候補手や変化図のさらなる分岐管理・ツリー可視化の拡張
+- 対局・検討棋譜の外部エクスポート/インポート機能（SGFファイル共有など）
+- その他実戦で気になった点やユーザーからの追加要望事項
+
+---
