@@ -1513,8 +1513,15 @@ export class UiShell {
       this.state.board = board;
     }
 
+    const previousNodeId = this.state.currentNodeId;
     if (payload.current_node_id !== undefined) this.state.currentNodeId = payload.current_node_id;
     else if (payload.node_id !== undefined) this.state.currentNodeId = payload.node_id;
+
+    // 局面（着手ノード）が移動・変更された場合は、AI コーチやヒントをリセットして最新局面に追従
+    if (previousNodeId && this.state.currentNodeId && previousNodeId !== this.state.currentNodeId) {
+      this.state.coachCard = null;
+      this.state.hintState = null;
+    }
     if (payload.latest_node_id !== undefined) this.state.latestNodeId = payload.latest_node_id;
     if (payload.following_latest !== undefined) {
       this.state.followingLatest = Boolean(payload.following_latest);
@@ -2200,6 +2207,20 @@ export class UiShell {
           }
         });
       }
+      const refreshExplainBtn = container.querySelector('[data-action-refresh-explain]');
+      if (refreshExplainBtn) {
+        refreshExplainBtn.addEventListener('click', () => {
+          this.state.coachCard = null;
+          this._renderCoach();
+        });
+      }
+      const closeHintBtn = container.querySelector('[data-action-close-hint]');
+      if (closeHintBtn) {
+        closeHintBtn.addEventListener('click', () => {
+          this.state.hintState = null;
+          this._renderCoach();
+        });
+      }
       const explainBtn = container.querySelector('[data-action-request-explain]');
       if (explainBtn) {
         explainBtn.addEventListener('click', async () => {
@@ -2328,6 +2349,7 @@ export class UiShell {
         <article class="coach-card coach-selectable">
           <div class="coach-card-header">
             <span class="coach-badge${isBlunder ? ' is-blunder' : ''}">${escapeHtml(lossBadge)}</span>
+            <button type="button" class="secondary-btn" data-action-refresh-explain="1" style="min-width: 60px; height: 28px; padding: 0 8px; font-size: 11px;">🔄 閉じる</button>
           </div>
           <h3 class="coach-headline">${escapeHtml(coachCard.headline || '')}</h3>
           ${ttsBar}
@@ -2345,6 +2367,7 @@ export class UiShell {
         <article class="coach-card coach-selectable">
           <div class="coach-card-header">
             <span class="coach-badge">💡 方針ヒント Lv${lvl} / 3</span>
+            <button type="button" class="secondary-btn" data-action-close-hint="1" style="min-width: 60px; height: 28px; padding: 0 8px; font-size: 11px;">🔄 閉じる</button>
           </div>
           ${hintState.lv1_macro ? `<div><div class="coach-section-label">Lv1. 大局・エリア</div><div class="coach-blunder-item">${escapeHtml(hintState.lv1_macro)}</div></div>` : ''}
           ${lvl >= 2 && hintState.lv2_strategy ? `<div><div class="coach-section-label">Lv2. 採るべき方針</div><div class="coach-plan-box">${escapeHtml(hintState.lv2_strategy)}</div></div>` : ''}

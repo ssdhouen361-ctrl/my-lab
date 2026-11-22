@@ -188,6 +188,17 @@
   - `static/sw.js`: キャッシュバージョンを `v12` に更新。
   - `tests/unit/test_coach_and_facts.py`: ファクト抽出およびフォールバック解説の単体テストを整備し全件 PASS。
 
+- **直近の改善（レイアウト微調整 & AI コーチの追従・リセット対応）:**
+  - `static/css/app.css`:
+    - タブの高さとボタンの CSS 重複指定を修正（`height: 32px`、`font-size: 11px` に整理）。
+    - グラフツールバー（`graph-toolbar`）の高さを 44px から 34px に圧縮し、ボタン高さも 30px に調整。
+    - グラフ SVG（`eval-graph-svg.is-tall`）の高さを 148px から 108px にスリム化し、凡例（大悪手・悪手・疑問手・好手）がはみ出さず画面内にすっきり収まるよう調整。
+  - `static/js/ui-shell.js`:
+    - 局面や手番が切り替わった際（`applyStateSync` 時のノード移動）、古い `coachCard` や `hintState` を自動リセットし、常にその局面に応じたコーチ表示・再取得ができるよう改修。
+    - 解説カードや方針ヒントカードの右上に「🔄 閉じる」ボタンを新設し、手動でもワンタップで再取得前の状態に戻せるように改善。
+  - `static/sw.js`: キャッシュバージョンを `v13` に更新。
+  - `tests/unit/`: 単体テスト 42 件全 PASS。
+
 ### 次のタスク（ユーザー操作＆Phase 1-C / Phase 2）
 1. **Mac mini ターミナルで初回環境構築＆全層 QA 実行（ネットワーク・Metal GPU 解放環境）:**
    - `cd ~/my-lab/projects/web-goban && ./scripts/setup.sh && ./scripts/qa.sh all`

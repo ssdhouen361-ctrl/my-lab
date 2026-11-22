@@ -837,17 +837,11 @@ button:focus-visible {
 
 .panel-tab {
   width: 100%;
-  height: 30px;
+  height: 32px;
   padding: 0 4px;
   font-size: 11px;
   font-weight: 700;
   border-radius: 6px;
-  background: var(--bg-base);
-  border-color: var(--border-subtle);
-  color: var(--text-secondary);
-}
-  font-size: 12px;
-  font-weight: 700;
   background: var(--bg-base);
   border-color: var(--border-subtle);
   color: var(--text-secondary);
@@ -967,19 +961,20 @@ button:focus-visible {
 
 /* SVG Evaluation Graph */
 .graph-toolbar {
-  flex: 0 0 44px;
-  height: 44px;
+  flex: 0 0 34px;
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 4px;
+  gap: 6px;
+  padding: 0 2px;
 }
 
 .graph-meta-text {
   flex: 1 1 0;
   min-width: 0;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 600;
   color: var(--text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -989,8 +984,15 @@ button:focus-visible {
 .graph-toolbar-btns {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+.graph-toolbar-btns .compact-toggle-btn {
+  height: 30px;
+  min-width: 48px;
+  padding: 0 6px;
+  font-size: 11px;
 }
 
 .eval-graph-svg {
@@ -1005,7 +1007,7 @@ button:focus-visible {
 }
 
 .eval-graph-svg.is-tall {
-  height: 148px;
+  height: 108px;
 }
 
 .eval-graph-svg.is-compact {
