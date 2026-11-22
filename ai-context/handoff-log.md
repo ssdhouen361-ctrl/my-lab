@@ -131,7 +131,12 @@
 
 ---
 
-## 完了・実用化プロジェクト: スマホ・タブレット対応 Web 碁盤・検討AI (`web-goban` / AetherGo)
+## 新規検討中プロジェクト: Galaxy Watch クイックタイマー＆アラーム (`galaxy-watch-timer`)
+
+- **計画書・検討案:** [projects/galaxy-watch-timer/README.md](../projects/galaxy-watch-timer/README.md)
+- **ステータス:** 要件ヒアリング・設計検討中
+- **目標:** Galaxy Watch（手首）上で、最小限のタップ数（1〜2タップ）で素早くタイマー・アラームをセットできる仕組みの構築。
+
 
 - **統合設計書:** [docs/web-goban-design.md](../docs/web-goban-design.md)
 - **手順書:** [projects/web-goban/README.md](../projects/web-goban/README.md)
