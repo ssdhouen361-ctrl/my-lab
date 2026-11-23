@@ -49,6 +49,7 @@ class TacTicTapEngine:
                 self.state = "RUNNING"
             elif direction == "DOWN":
                 self.digits = [0, 0, 0, 0]
+                self.active_col = 1 # Reset column to minute-1
 
     def tick(self):
         if self.state == "RUNNING":

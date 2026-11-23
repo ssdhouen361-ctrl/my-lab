@@ -305,7 +305,6 @@ select {
   stroke-dasharray: 1445; /* 2 * PI * 230 */
   stroke-dashoffset: 0;
   stroke-linecap: round;
-  transition: stroke-dashoffset 0.9s linear;
 }
 
 /* Alarm State */

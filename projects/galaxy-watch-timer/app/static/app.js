@@ -74,7 +74,8 @@ const COL_LIMITS = [5, 9, 5, 9]; // Max 59:59
 // Timer runtime
 let totalSeconds = 0;
 let remainingSeconds = 0;
-let timerInterval = null;
+let targetEndTime = 0;
+let timerAnimationId = null;
 let alarmInterval = null;
 
 // DOM Elements
@@ -124,8 +125,10 @@ function switchState(newState) {
   viewAlarm.classList.remove('active');
 
   if (newState === STATE_SETUP) {
-    clearInterval(timerInterval);
+    if (timerAnimationId) cancelAnimationFrame(timerAnimationId);
+    timerAnimationId = null;
     clearInterval(alarmInterval);
+    activeCol = 1; // リセット時や初期化時は桁を「分の1の位」に戻す
     viewSetup.classList.add('active');
     renderSetupDigits();
   } else if (newState === STATE_RUNNING) {
@@ -133,34 +136,42 @@ function switchState(newState) {
     haptics.startTimer();
     startRunningCountdown();
   } else if (newState === STATE_ALARM) {
-    clearInterval(timerInterval);
+    if (timerAnimationId) cancelAnimationFrame(timerAnimationId);
+    timerAnimationId = null;
     viewAlarm.classList.add('active');
     startAlarmSound();
   }
 }
 
-// Running Countdown Loop
+// Running Countdown Loop with Smooth Timestamp Sync
 function startRunningCountdown() {
-  updateRunningDisplay();
-  timerInterval = setInterval(() => {
-    remainingSeconds--;
-    if (remainingSeconds <= 0) {
+  targetEndTime = performance.now() + remainingSeconds * 1000;
+  
+  function frame(now) {
+    if (currentState !== STATE_RUNNING) return;
+    const msLeft = Math.max(0, targetEndTime - now);
+    const exactSecLeft = msLeft / 1000;
+    const displaySec = Math.ceil(exactSecLeft);
+
+    runDigits.textContent = formatTime(displaySec);
+
+    if (totalSeconds > 0) {
+      const fraction = exactSecLeft / totalSeconds;
+      const offset = CIRCUMFERENCE * (1 - fraction);
+      ringBar.style.strokeDashoffset = offset;
+    }
+
+    if (msLeft <= 0) {
       remainingSeconds = 0;
-      updateRunningDisplay();
+      runDigits.textContent = '00:00';
+      ringBar.style.strokeDashoffset = CIRCUMFERENCE;
       switchState(STATE_ALARM);
     } else {
-      updateRunningDisplay();
+      timerAnimationId = requestAnimationFrame(frame);
     }
-  }, 1000);
-}
-
-function updateRunningDisplay() {
-  runDigits.textContent = formatTime(remainingSeconds);
-  if (totalSeconds > 0) {
-    const fraction = remainingSeconds / totalSeconds;
-    const offset = CIRCUMFERENCE * (1 - fraction);
-    ringBar.style.strokeDashoffset = offset;
   }
+
+  timerAnimationId = requestAnimationFrame(frame);
 }
 
 // Alarm Flashing & Haptics
@@ -284,8 +295,9 @@ watchScreen.addEventListener('pointerup', (e) => {
           // Swipe Up -> Start Timer Immediately
           triggerStart();
         } else {
-          // Swipe Down -> Reset to 00:00
+          // Swipe Down -> Reset to 00:00 & reset column
           digits = [0, 0, 0, 0];
+          activeCol = 1; // 桁位置も初期位置（分の1の位）へリセット
           haptics.stopAlarm();
           renderSetupDigits();
         }
