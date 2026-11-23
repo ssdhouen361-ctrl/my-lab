@@ -34,7 +34,7 @@ jobs:
           gradle-version: '8.7'
 
       - name: Build Debug APK
-        run: gradle assembleDebug --no-daemon
+        run: gradle assembleDebug --stacktrace --no-daemon
 
       - name: Prepare APK file
         run: |
@@ -58,3 +58,4 @@ jobs:
             Galaxy Watch 8 / Wear OS 用のブラインド・タップタイマー＆アラームアプリです。
             下の **Assets** から `tactictap.apk` をダウンロードしてウォッチへインストールしてください。
           files: projects/galaxy-watch-timer/tactictap.apk
+          prerelease: false
