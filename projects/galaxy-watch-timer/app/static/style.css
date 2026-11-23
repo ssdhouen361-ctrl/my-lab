@@ -1,0 +1,372 @@
+/* TacTicTap Design System */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;600&display=swap');
+
+:root {
+  --bg-color: #000000;
+  --active-fg: #ff8c00;
+  --inactive-fg: rgba(255, 140, 0, 0.40);
+  --hairline: rgba(255, 140, 0, 0.22);
+  --ring-bg: rgba(255, 140, 0, 0.15);
+  --ring-fg: #ff8c00;
+  --font-family: 'Chakra Petch', -apple-system, sans-serif;
+  --watch-dim: 480px;
+}
+
+/* 6 Themes */
+body.theme-dark-orange {
+  --bg-color: #000000;
+  --active-fg: #ff8c00;
+  --inactive-fg: rgba(255, 140, 0, 0.38);
+  --hairline: rgba(255, 140, 0, 0.22);
+  --ring-bg: rgba(255, 140, 0, 0.15);
+  --ring-fg: #ff8c00;
+}
+
+body.theme-dark-green {
+  --bg-color: #000000;
+  --active-fg: #00ff6e;
+  --inactive-fg: rgba(0, 255, 110, 0.38);
+  --hairline: rgba(0, 255, 110, 0.22);
+  --ring-bg: rgba(0, 255, 110, 0.15);
+  --ring-fg: #00ff6e;
+}
+
+body.theme-dark-mono {
+  --bg-color: #000000;
+  --active-fg: #ffffff;
+  --inactive-fg: rgba(255, 255, 255, 0.38);
+  --hairline: rgba(255, 255, 255, 0.22);
+  --ring-bg: rgba(255, 255, 255, 0.15);
+  --ring-fg: #ffffff;
+}
+
+body.theme-light-amber {
+  --bg-color: #f7f7f9;
+  --active-fg: #e16400;
+  --inactive-fg: rgba(225, 100, 0, 0.40);
+  --hairline: rgba(225, 100, 0, 0.25);
+  --ring-bg: rgba(225, 100, 0, 0.12);
+  --ring-fg: #e16400;
+}
+
+body.theme-light-green {
+  --bg-color: #f7f7f9;
+  --active-fg: #00a855;
+  --inactive-fg: rgba(0, 168, 85, 0.40);
+  --hairline: rgba(0, 168, 85, 0.25);
+  --ring-bg: rgba(0, 168, 85, 0.12);
+  --ring-fg: #00a855;
+}
+
+body.theme-light-mono {
+  --bg-color: #f7f7f9;
+  --active-fg: #1a1c20;
+  --inactive-fg: rgba(26, 28, 32, 0.38);
+  --hairline: rgba(26, 28, 32, 0.22);
+  --ring-bg: rgba(26, 28, 32, 0.12);
+  --ring-fg: #1a1c20;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background-color: #0e1013;
+  color: #d1d5db;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-x: hidden;
+}
+
+.simulator-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 40px;
+  padding: 24px;
+  max-width: 1100px;
+  width: 100%;
+}
+
+.control-panel {
+  flex: 1;
+  max-width: 400px;
+  background: #17191e;
+  border: 1px solid #282c34;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.control-panel h1 {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-panel h1 span {
+  font-size: 12px;
+  background: #ff8c00;
+  color: #000;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.theme-selector, .device-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
+select {
+  background: #20242c;
+  color: #f3f4f6;
+  border: 1px solid #374151;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  outline: none;
+}
+
+.guide-box {
+  background: #101216;
+  border: 1px solid #222630;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.guide-box h3 {
+  font-size: 14px;
+  margin-bottom: 10px;
+  color: #e5e7eb;
+}
+
+.guide-box ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #9ca3af;
+}
+
+.guide-box li strong {
+  color: #f3f4f6;
+}
+
+/* Watch Hardware Shell */
+.watch-hardware {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.watch-bezel {
+  width: calc(var(--watch-dim) + 40px);
+  height: calc(var(--watch-dim) + 40px);
+  background: radial-gradient(circle, #252830 65%, #15171c 100%);
+  border-radius: 50%;
+  padding: 20px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 0 2px #353a45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Native Circular Display */
+.watch-screen {
+  width: var(--watch-dim);
+  height: var(--watch-dim);
+  background-color: var(--bg-color);
+  border-radius: 50%;
+  position: relative;
+  overflow: hidden;
+  touch-action: none;
+  cursor: pointer;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.7);
+  transition: background-color 0.25s ease;
+}
+
+/* Screen Views */
+.screen-view {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.screen-view.active {
+  display: flex;
+}
+
+/* Hairline dividing Top 2/3 and Bottom 1/3 */
+.tap-divider {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 66.666%;
+  height: 2px;
+  background-color: var(--hairline);
+  pointer-events: none;
+  transition: background-color 0.25s ease;
+}
+
+/* Huge Bold Digits Display */
+.digits-display {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-family);
+  font-size: 104px;
+  font-weight: 700;
+  letter-spacing: -2px;
+  width: 100%;
+  text-align: center;
+  transform: translateY(-5%);
+}
+
+.digit-col {
+  display: inline-block;
+  color: var(--inactive-fg);
+  padding: 0 2px;
+  transition: color 0.15s ease, transform 0.1s ease;
+}
+
+.digit-col.selected {
+  color: var(--active-fg);
+  text-shadow: 0 0 20px var(--ring-bg);
+  transform: scale(1.04);
+}
+
+.colon {
+  color: var(--active-fg);
+  margin: 0 2px;
+  opacity: 0.9;
+  transform: translateY(-4px);
+}
+
+/* Running Mode */
+.digits-display.running {
+  color: var(--active-fg);
+  font-size: 110px;
+  transform: translateY(0);
+}
+
+.progress-ring {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+  pointer-events: none;
+}
+
+.ring-bg {
+  fill: none;
+  stroke: var(--ring-bg);
+  stroke-width: 6;
+}
+
+.ring-bar {
+  fill: none;
+  stroke: var(--ring-fg);
+  stroke-width: 6;
+  stroke-dasharray: 1445; /* 2 * PI * 230 */
+  stroke-dashoffset: 0;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.9s linear;
+}
+
+/* Alarm State */
+.alarm-pulse-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: var(--active-fg);
+  opacity: 0;
+  animation: pulse-ring 1s infinite alternate ease-in-out;
+}
+
+@keyframes pulse-ring {
+  0% { opacity: 0.08; transform: scale(0.95); }
+  100% { opacity: 0.35; transform: scale(1.05); }
+}
+
+.digits-display.alarm {
+  color: var(--active-fg);
+  font-size: 115px;
+  animation: flash 0.6s infinite alternate ease-in-out;
+}
+
+@keyframes flash {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.alarm-hint {
+  position: absolute;
+  bottom: 22%;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--active-fg);
+  opacity: 0.8;
+}
+
+/* Touch Feedback */
+.ripple-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  background: radial-gradient(circle, var(--active-fg) 0%, transparent 70%);
+  opacity: 0.5;
+  animation: ripple-anim 0.35s ease-out;
+}
+
+@keyframes ripple-anim {
+  to {
+    transform: scale(3);
+    opacity: 0;
+  }
+}

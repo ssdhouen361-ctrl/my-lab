@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>TacTicTap (タク・ティック・タップ) - Wear OS Simulator & Beta</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="theme-dark-orange">
+  <div class="simulator-container">
+    <div class="control-panel">
+      <h1>TacTicTap <span>Wear OS Beta</span></h1>
+      <div class="theme-selector">
+        <label>テーマ切替:</label>
+        <select id="themeSelect">
+          <option value="theme-dark-orange">1. Dark Amber (デフォルト)</option>
+          <option value="theme-dark-green">2. Dark Cyber Green</option>
+          <option value="theme-dark-mono">3. Dark Monochrome</option>
+          <option value="theme-light-amber">4. Light Refined Amber</option>
+          <option value="theme-light-green">5. Light Emerald Green</option>
+          <option value="theme-light-mono">6. Light Charcoal</option>
+        </select>
+      </div>
+      <div class="device-selector">
+        <label>端末サイズ:</label>
+        <select id="deviceSelect">
+          <option value="480">Galaxy Watch 8 / Ultra (480px)</option>
+          <option value="450">Pixel Watch 3 (450px)</option>
+          <option value="432">Galaxy Watch 8 40mm (432px)</option>
+        </select>
+      </div>
+      <div class="guide-box">
+        <h3>💡 操作方法（完全ブラインド仕様）</h3>
+        <ul>
+          <li><strong>上部2/3タップ:</strong> 数値 +1</li>
+          <li><strong>下部1/3タップ:</strong> 数値 -1</li>
+          <li><strong>左右スワイプ:</strong> 桁移動 (分十 ⇄ 分一 ⇄ 秒十 ⇄ 秒一)</li>
+          <li><strong>上スワイプ:</strong> タイマー即スタート</li>
+          <li><strong>下スワイプ:</strong> リセット / 設定戻る</li>
+          <li><strong>タイマー鳴動時:</strong> 画面どこでもタップで停止</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Smart Watch Hardware Mock -->
+    <div class="watch-hardware" id="watchHardware">
+      <div class="watch-bezel">
+        <!-- Watch Screen (480x480 native circle) -->
+        <div class="watch-screen" id="watchScreen">
+          
+          <!-- State: SETUP MODE -->
+          <div class="screen-view active" id="viewSetup">
+            <!-- Subtle hairline dividing upper 2/3 and lower 1/3 -->
+            <div class="tap-divider"></div>
+
+            <div class="digits-display">
+              <span class="digit-col" data-col="0" id="digit-m10">0</span>
+              <span class="digit-col" data-col="1" id="digit-m1">3</span>
+              <span class="colon">:</span>
+              <span class="digit-col" data-col="2" id="digit-s10">0</span>
+              <span class="digit-col" data-col="3" id="digit-s1">0</span>
+            </div>
+
+            <!-- Tap feedback animations -->
+            <div class="ripple-overlay" id="rippleOverlay"></div>
+          </div>
+
+          <!-- State: RUNNING MODE -->
+          <div class="screen-view" id="viewRunning">
+            <div class="digits-display running">
+              <span id="run-digits">03:00</span>
+            </div>
+            <!-- Progress Arc / Ring indicator -->
+            <svg class="progress-ring" viewBox="0 0 480 480">
+              <circle class="ring-bg" cx="240" cy="240" r="230"></circle>
+              <circle class="ring-bar" id="ringBar" cx="240" cy="240" r="230"></circle>
+            </svg>
+          </div>
+
+          <!-- State: ALARM ALARMING MODE -->
+          <div class="screen-view" id="viewAlarm">
+            <div class="alarm-pulse-bg"></div>
+            <div class="digits-display alarm">
+              <span id="alarm-digits">00:00</span>
+            </div>
+            <div class="alarm-hint">TAP TO STOP</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

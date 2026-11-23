@@ -4,6 +4,35 @@
 
 ---
 
+## 進行中プロジェクト: Galaxy Watch / Wear OS ブラインド・タップタイマー「TacTicTap」
+
+- **プロジェクトディレクトリ:** [projects/galaxy-watch-timer/](../projects/galaxy-watch-timer/)
+- **決定アプリ名:** `TacTicTap` (タク・ティック・タップ)
+- **ステータス:** **ベータ版実装・動作シミュレータ＆Wear OSコードベース完成（テスト全件合格）**
+- **最終更新:** 2026-11-23
+
+### 1. 実装・検証済みの内容
+1. **完全視覚・ブラインド特化 UI/UX 設計の確立:**
+   - 余計な説明文字を一切排除し、「設定中の桁のみハイライト」「それ以外の桁は透過40%で視認性維持」「下部1/3に繊細なヘアライン境界」のみで操作可能にするミニマルデザインを確立。
+   - Galaxy Watch 8（480×480px）など全主要Wear OS解像度で余白を極限まで削ぎ落とし、110pt ➔ **150pt 特大フォント** によるレスポンシブスケーリングを実現。
+   - 全6テーマ（ダーク3種：オレンジ/グリーン/モノクロ、ライト3種：アンバー/エメラルド/チャコール）を策定。
+2. **ブラインド操作インタラクション状態機械:**
+   - **大味タップ認識:** 画面上部2/3タップで `+1`、下部1/3タップで `-1`。
+   - **スワイプ操作:** 左右スワイプで桁移動（分十 ⇄ 分一 ⇄ 秒十 ⇄ 秒一）、上スワイプで即カウントダウン開始、下スワイプでリセット。
+   - **アラーム停止:** 鳴動中は画面のどこでもワンタップするだけで即停止・設定画面へ復帰。
+3. **インタラクティブ Web シミュレータ（ベータ版）の実装:**
+   - [app/static/index.html](../projects/galaxy-watch-timer/app/static/index.html)
+   - [app/static/style.css](../projects/galaxy-watch-timer/app/static/style.css)
+   - [app/static/app.js](../projects/galaxy-watch-timer/app/static/app.js)
+   - Web Audio API を用いた触覚・音響フィードバックシミュレーション、円形480pxウォッチベゼル描画、6テーマ切替、Galaxy Watch 8 / Pixel Watch 端末サイズシミュレーションを完備。
+4. **Wear OS (Compose for Wear OS / Kotlin) ネイティブ実装:**
+   - [wear-os-app/src/main/java/com/mylab/tactictap/MainActivity.kt](../projects/galaxy-watch-timer/wear-os-app/src/main/java/com/mylab/tactictap/MainActivity.kt)
+   - Circular Compose Canvas と `detectTapGestures` / `detectDragGestures` によるネイティブタッチハンドラ、6テーマカラー定義を完全移植。
+5. **自動テスト・品質検証:**
+   - [tests/test_engine.py](../projects/galaxy-watch-timer/tests/test_engine.py) にて状態遷移・上下タップ境界・桁制限（分十位は5までなど）・ループ処理・アラーム停止など計9件の自動テストを作成し、**全件 PASS（9/9 passed）** を確認。
+
+---
+
 ## 完了プロジェクト: Galaxyアラーム連動 Apple Music自動再生
 
 - **設計・運用マニュアル:** [docs/music-automation.md](../docs/music-automation.md)
