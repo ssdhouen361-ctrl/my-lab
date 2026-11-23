@@ -40,11 +40,21 @@ jobs:
         run: |
           mkdir -p releases
           cp app/build/outputs/apk/debug/app-debug.apk releases/tactictap-debug.apk
-          cp app/build/outputs/apk/debug/app-debug.apk tactictap-debug.apk
+          cp app/build/outputs/apk/debug/app-debug.apk tactictap.apk
 
       - name: Upload APK to Actions Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: tactictap-wearos-apk
-          path: projects/galaxy-watch-timer/tactictap-debug.apk
+          path: projects/galaxy-watch-timer/tactictap.apk
           overwrite: true
+
+      - name: Publish APK to GitHub Releases (tactictap-latest)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: tactictap-latest
+          name: "⏱️ TacTicTap Wear OS (最新版 APK)"
+          body: |
+            Galaxy Watch 8 / Wear OS 用のブラインド・タップタイマー＆アラームアプリです。
+            下の **Assets** から `tactictap.apk` をダウンロードしてウォッチへインストールしてください。
+          files: projects/galaxy-watch-timer/tactictap.apk

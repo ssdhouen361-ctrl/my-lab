@@ -42,6 +42,20 @@
 
 ---
 
-## 3. 全6テーマ 決定版モックアップ（フォント極大化 150pt 版）
+## 3. ダウンロード＆インストール方法
+
+### APK ダウンロードURL（GitHub Releases 固定リンク）
+GitHub Actions による自動ビルド完了後、以下のリンクから最新版 APK を直接ダウンロードできます：
+
+- **ダウンロードURL:**  
+  👉 **`https://github.com/ssdhouen361-ctrl/my-lab/releases/download/tactictap-latest/tactictap.apk`**
+- **Releases ページ:**  
+  👉 **`https://github.com/ssdhouen361-ctrl/my-lab/releases/tag/tactictap-latest`**
+
+### Galaxy Watch へのインストール手順（スマホ経由）
+1. スマホ（Galaxy S26 Ultra）で上記URLをタップして `tactictap.apk` をダウンロード。
+2. スマホアプリ「**GeminiMan Wear OS Manager**」または「**Easy Fire Tools**」「**Bugjaeger**」等のウォッチ連携ツールを開く。
+3. Watch と同じ Wi-Fi に接続し、ワイヤレスデバッグ経由で `tactictap.apk` を転送・インストール。
+4. ウォッチのアプリ一覧に「**TacTicTap Timer**」と「**TacTicTap Alarm**」が追加されます！
 ![TacTicTap All 6 Themes Max Font](docs/mockups/tactictap_all_6_themes_large.jpg)
 *(余白を徹底的に削ぎ落とし、画面幅いっぱいに 150pt 特大フォントを配置)*
