@@ -160,11 +160,33 @@
 
 ---
 
-## 新規検討中プロジェクト: Galaxy Watch クイックタイマー＆アラーム (`galaxy-watch-timer`)
+## 開発中プロジェクト（v1.0.0 実装完了）: Galaxy Watch / Wear OS ブラインド・タップタイマー＆アラーム (`TacTicTap`)
 
-- **計画書・検討案:** [projects/galaxy-watch-timer/README.md](../projects/galaxy-watch-timer/README.md)
-- **ステータス:** 要件ヒアリング・設計検討中
-- **目標:** Galaxy Watch（手首）上で、最小限のタップ数（1〜2タップ）で素早くタイマー・アラームをセットできる仕組みの構築。
+- **設計書 & モックアップ:** [projects/galaxy-watch-timer/README.md](../projects/galaxy-watch-timer/README.md)
+- **プログラム本体:**
+  - UI・状態機械（Jetpack Compose for Wear OS）: [projects/galaxy-watch-timer/app/src/main/java/com/mylab/tactictap/MainActivity.kt](../projects/galaxy-watch-timer/app/src/main/java/com/mylab/tactictap/MainActivity.kt)
+  - 6大テーマ定義: [projects/galaxy-watch-timer/app/src/main/java/com/mylab/tactictap/Theme.kt](../projects/galaxy-watch-timer/app/src/main/java/com/mylab/tactictap/Theme.kt)
+  - アラーム・バックグラウンド鳴動: [projects/galaxy-watch-timer/app/src/main/java/com/mylab/tactictap/AlarmReceiver.kt](../projects/galaxy-watch-timer/app/src/main/java/com/mylab/tactictap/AlarmReceiver.kt)
+  - 仮想ブラインド操作テストプレイ検証: [projects/galaxy-watch-timer/tests/test_playtest.py](../projects/galaxy-watch-timer/tests/test_playtest.py)
+  - 自動APKビルド設定: [.github/workflows/build-tactictap.yml](../.github/workflows/build-tactictap.yml)
+- **ステータス:** **v1.0.0 ネイティブアプリ実装完了・自動ビルド環境整備済み**
+- **最終更新:** 2026-11-23
+
+### 実装済みの仕様と特徴
+1. **大味ブラインド操作の完全実現:**
+   - 画面上部 2/3: `+1` 加算 / 画面下部 1/3: `-1` 減算。
+   - 左スワイプ（⬅）または ダブルピンチ: 次の桁へ進む。
+   - 上スワイプ（⬆）: 残り桁を00にして即スタート（フリック一発で15分タイマー等を2秒セット）。
+   - 下スワイプ（⬇）: 1手戻る（Undo） / 最初の桁で全リセット。
+   - タイマー鳴動時: 画面のどこでもポンと1タップまたはダブルピンチで即停止。
+2. **誤リセット防止の2段階安全設計:**
+   - 動作中は誤って下スワイプしてもリセットされず、画面タップで「一時停止（ポーズ）」にした状態でのみ下スワイプでリセット可能。
+3. **全6大カラーテーマ & コロン点滅演出:**
+   - アンバーオレンジ（ダーク/ライト）、エメラルドグリーン（ダーク/ライト）、モノクロ（ダーク/ライト）。
+   - 画面長押しでテーマを瞬時に切り替え可能。
+   - 動作中は中央の「 : 」（コロン）が1秒周期で滑らかにフェード点滅。
+4. **自動テストプレイ検証（全件 PASS）:**
+   - 画面説明を一切見ないブラインド操作シナリオ（33:24入力、上スワイプ即スタート、誤リセット防止、一時停止リセット）をシミュレータで検証し、100% PASS を確認。
 
 
 - **統合設計書:** [docs/web-goban-design.md](../docs/web-goban-design.md)
