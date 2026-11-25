@@ -484,9 +484,10 @@ class GoLiveCoachApp {
 
     // Board Click-to-Play Event (盤面クリックで着手＆分岐作成)
     const handleBoardClick = async (e) => {
+      e.preventDefault();
       const rect = this.ghostCanvas.getBoundingClientRect();
-      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : null);
-      const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+      const clientX = e.clientX ?? (e.touches && e.touches[0] ? e.touches[0].clientX : null);
+      const clientY = e.clientY ?? (e.touches && e.touches[0] ? e.touches[0].clientY : null);
       if (clientX === null || clientY === null) return;
 
       const x = clientX - rect.left;
@@ -496,8 +497,11 @@ class GoLiveCoachApp {
       const col = Math.round((x - this.gridPadding) / this.cellSize);
       const row = 18 - Math.round((y - this.gridPadding) / this.cellSize);
 
+      console.log(`[BoardClick] raw: (${x.toFixed(1)}, ${y.toFixed(1)}), col: ${col}, row: ${row}`);
+
       if (col >= 0 && col < 19 && row >= 0 && row < 19) {
         const gtp = `${GTP_COLS[col]}${row + 1}`;
+        console.log(`[BoardClick] Target GTP: ${gtp}`);
         try {
           const res = await fetch(`/api/v1/play?gtp=${gtp}`, { method: "POST" });
           if (res.ok) {
@@ -508,7 +512,7 @@ class GoLiveCoachApp {
             this.renderGhost();
           } else {
             const err = await res.json();
-            console.warn("着手不可:", err.detail);
+            alert(`着手できません: ${err.detail}`);
           }
         } catch (err) {
           console.error("着手通信エラー", err);
@@ -516,7 +520,13 @@ class GoLiveCoachApp {
       }
     };
 
-    this.ghostCanvas.addEventListener("pointerdown", handleBoardClick);
+    // ghostCanvas と wrapper の両方にイベントを登録し、取りこぼしを完全防止
+    this.ghostCanvas.addEventListener("click", handleBoardClick);
+    this.ghostCanvas.addEventListener("touchend", handleBoardClick);
+    const wrapper = document.getElementById("canvas-wrapper");
+    if (wrapper) {
+      wrapper.addEventListener("click", handleBoardClick);
+    }
 
     document.getElementById("send-speech-btn").addEventListener("click", () => {
       const val = document.getElementById("speech-input").value;
