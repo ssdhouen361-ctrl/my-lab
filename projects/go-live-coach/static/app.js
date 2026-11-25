@@ -36,8 +36,9 @@ class GoLiveCoachApp {
     }
     this.recognition = new SpeechRecognition();
     this.recognition.lang = "ja-JP";
-    this.recognition.continuous = false;
+    this.recognition.continuous = true; // 途中で勝手に切れないよう常時ストリーム
     this.recognition.interimResults = true;
+    this.silenceTimer = null;
 
     this.recognition.onstart = () => {
       this.isRecording = true;
@@ -50,11 +51,22 @@ class GoLiveCoachApp {
 
     this.recognition.onresult = (event) => {
       let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
+      for (let i = 0; i < event.results.length; ++i) {
         transcript += event.results[i][0].transcript;
       }
       const input = document.getElementById("speech-input");
       if (input) input.value = transcript;
+
+      // 無音タイマー（2秒間沈黙したら送信。早すぎる打ち切りを防止）
+      if (this.silenceTimer) clearTimeout(this.silenceTimer);
+      if (this.voiceMode === "continuous") {
+        this.silenceTimer = setTimeout(() => {
+          if (this.isRecording && transcript.trim()) {
+            this.stopRecording();
+            this.sendSpeech(transcript.trim());
+          }
+        }, 2200); // 2.2秒の余裕を持たせる
+      }
     };
 
     this.recognition.onerror = (event) => {
@@ -63,9 +75,11 @@ class GoLiveCoachApp {
     };
 
     this.recognition.onend = () => {
+      if (this.silenceTimer) clearTimeout(this.silenceTimer);
+      const isStillRecording = this.isRecording;
       this.stopRecording();
       const input = document.getElementById("speech-input");
-      if (input && input.value.trim()) {
+      if (this.voiceMode === "ptt" && input && input.value.trim() && isStillRecording) {
         this.sendSpeech(input.value.trim());
       }
     };
@@ -235,7 +249,7 @@ class GoLiveCoachApp {
       ctx.stroke();
     }
 
-    // Ghost stones with sequence numbers
+    // Ghost stones with clear Black / White distinction and sequence numbers
     for (const v of this.ghostVariations) {
       const col = GTP_COLS.indexOf(v.coord[0]);
       const row = parseInt(v.coord.slice(1)) - 1;
@@ -245,18 +259,37 @@ class GoLiveCoachApp {
       ctx.save();
       ctx.beginPath();
       ctx.arc(x, y, radius, 0, Math.PI * 2);
-      ctx.fillStyle = v.color === "B" ? "rgba(30, 58, 138, 0.6)" : "rgba(191, 219, 254, 0.7)";
-      ctx.fill();
-      ctx.strokeStyle = "#3b82f6";
-      ctx.lineWidth = 2;
-      ctx.stroke();
 
-      // Number
-      ctx.fillStyle = "#ffffff";
-      ctx.font = `bold ${Math.round(this.cellSize * 0.42)}px sans-serif`;
+      const isBlack = v.color === "B";
+      if (isBlack) {
+        // 黒の変化手（濃い半透明黒石 ＋ 青ネオン枠）
+        ctx.fillStyle = "rgba(20, 25, 35, 0.82)";
+        ctx.fill();
+        ctx.strokeStyle = "#38bdf8"; // 明るいシアン青枠
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.fillStyle = "#ffffff"; // 白文字
+      } else {
+        // 白の変化手（明るい半透明白石 ＋ オレンジ枠）
+        ctx.fillStyle = "rgba(250, 250, 250, 0.88)";
+        ctx.fill();
+        ctx.strokeStyle = "#f97316"; // 鮮やかなオレンジ枠
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.fillStyle = "#1e293b"; // 黒文字
+      }
+
+      // 手順番号（1, 2, 3...）
+      ctx.font = `bold ${Math.round(this.cellSize * 0.45)}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(v.step.toString(), x, y);
+
+      // 上部に極小で「黒①」「白②」のラベル
+      ctx.font = `bold ${Math.round(this.cellSize * 0.22)}px sans-serif`;
+      ctx.fillStyle = isBlack ? "#38bdf8" : "#ea580c";
+      ctx.fillText(isBlack ? "黒" : "白", x, y - radius * 0.58);
+
       ctx.restore();
     }
   }
@@ -326,13 +359,24 @@ class GoLiveCoachApp {
 
   executeBoardActions(actions) {
     if (!actions) return;
+    const currentTurn = (this.gameState && this.gameState.turn) ? this.gameState.turn : "W";
+
     for (const act of actions) {
       if (act.action === "play_variation" && act.coords) {
-        this.ghostVariations = act.coords.map((c, idx) => ({
-          coord: c,
-          step: idx + 1,
-          color: idx % 2 === 0 ? "B" : "W"
-        }));
+        // 次の手番（白番の検討なら白から交互に着手）
+        this.ghostVariations = act.coords.map((c, idx) => {
+          let stoneColor;
+          if (currentTurn === "W") {
+            stoneColor = (idx % 2 === 0) ? "W" : "B";
+          } else {
+            stoneColor = (idx % 2 === 0) ? "B" : "W";
+          }
+          return {
+            coord: c,
+            step: idx + 1,
+            color: stoneColor
+          };
+        });
         this.renderGhost();
       }
     }
@@ -362,15 +406,20 @@ class GoLiveCoachApp {
     div.className = "chat-card ai";
     let html = `<div class="card-title">AIコーチ (Gemini × KataGo)</div><div class="card-text">${this.escape(replyText)}</div>`;
     if (actions && actions.length > 0) {
-      html += `<div class="action-chip" onclick="app.reapplyVariation()">▶ 変化図を盤面に表示 (ゴースト石)</div>`;
+      const coordsJson = JSON.stringify(actions[0].coords || []).replace(/"/g, '&quot;');
+      html += `<div class="action-chip" onclick="app.reapplyVariation(${coordsJson})">▶ 変化手順を盤面に表示 (ゴースト石)</div>`;
     }
     div.innerHTML = html;
     history.appendChild(div);
     div.scrollIntoView({ behavior: "smooth" });
   }
 
-  reapplyVariation() {
-    this.renderGhost();
+  reapplyVariation(coords) {
+    if (coords && coords.length > 0) {
+      this.executeBoardActions([{ action: "play_variation", coords: coords }]);
+    } else {
+      this.renderGhost();
+    }
   }
 
   escape(str) {
@@ -432,6 +481,35 @@ class GoLiveCoachApp {
         }
       });
     }
+
+    // Board Click-to-Play Event (盤面クリックで着手＆分岐作成)
+    this.ghostCanvas.addEventListener("click", async (e) => {
+      const rect = this.ghostCanvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const col = Math.round((x - this.gridPadding) / this.cellSize);
+      const row = 18 - Math.round((y - this.gridPadding) / this.cellSize);
+
+      if (col >= 0 && col < 19 && row >= 0 && row < 19) {
+        const gtp = `${GTP_COLS[col]}${row + 1}`;
+        try {
+          const res = await fetch(`/api/v1/play?gtp=${gtp}`, { method: "POST" });
+          if (res.ok) {
+            this.gameState = await res.json();
+            this.ghostVariations = []; // 確定着手したらゴーストを消去
+            this.updateNavUI();
+            this.renderBase();
+            this.renderGhost();
+          } else {
+            const err = await res.json();
+            console.warn("着手不可:", err.detail);
+          }
+        } catch (err) {
+          console.error("着手通信エラー", err);
+        }
+      }
+    });
 
     document.getElementById("send-speech-btn").addEventListener("click", () => {
       const val = document.getElementById("speech-input").value;

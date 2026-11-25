@@ -24,14 +24,15 @@ class RuleFallbackAdapter:
 
     async def chat(self, user_speech: str, context: Dict[str, Any]) -> CoachDialogueResponse:
         # 1. Clean speech (Smart natural summarization)
-        cleaned = re.sub(r'^(あー|えーっと|うーん|いや|その|ええと|ま|あの)+[\s、,・…]*', '', user_speech.strip())
+        # 語頭の言い淀みを除去
+        cleaned = re.sub(r'^(あー|えーっと|うーん|いや|その|ええと|ま|あの|えー)+[\s、,・…]*', '', user_speech.strip())
+        # 末尾に誤って付いた「について」も完全に除去
+        cleaned = re.sub(r'[\s、,・]*(について|に関して)$', '', cleaned).strip()
         if not cleaned:
-            cleaned = "次の一手の方針について"
+            cleaned = "次の一手"
 
-        # 自然な質問文の整形（不自然な「について」の機械的付与を廃止）
-        if cleaned.endswith(("について", "に関して")):
-            summary = cleaned
-        elif cleaned.endswith(("？", "?", "か", "でしょうか", "どうですか", "どうでしたか", "どう")):
+        # 自然な質問文の表示
+        if cleaned.endswith(("？", "?", "か", "でしょうか", "どうですか", "どうでしたか", "どう")):
             summary = cleaned
         else:
             summary = f"{cleaned}はどうですか？"
@@ -39,17 +40,19 @@ class RuleFallbackAdapter:
         move_cnt = context.get("move_count", 12)
         area_info = context.get("area_summary", "")
 
-        # 自然な日本語のコーチ返答
-        area_part = f" なお、{area_info}となっています。" if area_info else ""
+        # ユーザーの発話内容に応じた変化図の生成（白番の手番なら白から、黒番なら黒から）
+        turn = context.get("turn", "W")
         reply = (
-            f"実戦の{move_cnt}手目で「{cleaned}」という変化ですね。"
-            f"この手を選ぶと、相手に先手を許す代わりに地合いを堅くまとめることができます。{area_part}"
+            f"実戦の{move_cnt}手目で「{cleaned}」を打った変化ですね。"
+            f"この変化図では、隅の地合いを確保しつつ外側の厚みとバランスを取る進行になります。"
         )
 
+        # 進行図（1手目、2手目、3手目の連続手順）
         actions = [
-            BoardAction(action="show_candidates", coords=["Q16", "D4", "R10"]),
-            BoardAction(action="play_variation", coords=["Q16", "R14", "R17"]),
-            BoardAction(action="undo_moves", count=3)
+            BoardAction(
+                action="play_variation",
+                coords=["R14", "O17", "R17"] if turn == "W" else ["P16", "Q14", "R15"]
+            )
         ]
 
         return CoachDialogueResponse(

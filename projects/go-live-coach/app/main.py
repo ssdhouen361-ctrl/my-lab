@@ -106,6 +106,33 @@ def navigate_move(action: str):
     session.current_node_id = session.move_history[target_idx]
     return get_state()
 
+@app.post("/api/v1/play")
+def play_move(gtp: str):
+    """Play a move on board. Creates a branch if diverging from main history."""
+    pt = gtp_to_point(gtp)
+    parent = session.nodes[session.current_node_id]
+    next_color = 'W' if parent.color == 'B' else 'B'
+
+    new_state = parent.board_state.copy()
+    ok, msg, captured = new_state.play_move(pt, next_color)
+    if not ok:
+        raise HTTPException(status_code=400, detail=msg)
+
+    nid = str(uuid.uuid4())[:8]
+    node = TreeNode(node_id=nid, parent_id=session.current_node_id, move=pt, color=next_color, board_state=new_state)
+    session.nodes[session.current_node_id].children.append(nid)
+    session.nodes[nid] = node
+
+    # Branching logic: truncate history after current and append new node
+    try:
+        curr_idx = session.move_history.index(session.current_node_id)
+        session.move_history = session.move_history[:curr_idx + 1] + [nid]
+    except ValueError:
+        session.move_history.append(nid)
+
+    session.current_node_id = nid
+    return get_state()
+
 @app.post("/api/v1/slice-area")
 def slice_local_area(bbox: List[int]):
     """bbox: [col_min, col_max, row_min, row_max]"""
