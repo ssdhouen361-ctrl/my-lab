@@ -1,5 +1,6 @@
 package com.mylab.tactictap
 
+import android.content.Context
 import android.os.Bundle
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -7,9 +8,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +22,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
@@ -29,14 +33,14 @@ enum class AppState {
     SETUP,
     RUNNING,
     PAUSED,
-    RINGING
+    RINGING,
+    SETTINGS
 }
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        // Check if launched as AlarmActivity alias
         val isAlarmMode = intent?.component?.className?.contains("AlarmActivity") == true
         
         setContent {
@@ -48,6 +52,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun TacTicTapApp(initialAlarmMode: Boolean) {
     val context = LocalContext.current
+    val prefs = remember { context.getSharedPreferences("tactictap_prefs", Context.MODE_PRIVATE) }
     val vibrator = remember { context.getSystemService(Vibrator::class.java) }
 
     fun playClickHaptic(isDouble: Boolean = false) {
@@ -64,8 +69,25 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
         }
     }
 
-    var currentThemeIndex by remember { mutableIntStateOf(0) }
-    val currentTheme = AppTheme.values()[currentThemeIndex]
+    var currentThemeIndex by remember { 
+        mutableIntStateOf(prefs.getInt("theme_index", 0)) 
+    }
+    val currentTheme = AppTheme.values()[currentThemeIndex.coerceIn(0, AppTheme.values().size - 1)]
+
+    // 操作設定（左右反転、上下反転）
+    // デフォルト: 
+    //   左右: 左=次桁(+1), 右=前桁(-1)  (invertHorizontal=true で 右=次桁, 左=前桁)
+    //   上下: 上=確定(即スタート), 下=リセット (invertVertical=true で 下=確定, 上=リセット)
+    var invertHorizontal by remember { mutableStateOf(prefs.getBoolean("invert_h", false)) }
+    var invertVertical by remember { mutableStateOf(prefs.getBoolean("invert_v", false)) }
+
+    fun saveSettings() {
+        prefs.edit()
+            .putInt("theme_index", currentThemeIndex)
+            .putBoolean("invert_h", invertHorizontal)
+            .putBoolean("invert_v", invertVertical)
+            .apply()
+    }
     
     var appState by remember { mutableStateOf(AppState.SETUP) }
     var digits by remember { mutableStateOf(intArrayOf(0, 0, 0, 0)) } // d0, d1, d2, d3
@@ -102,7 +124,7 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
         modifier = Modifier
             .fillMaxSize()
             .background(currentTheme.bg)
-            .pointerInput(appState, activeDigitIndex) {
+            .pointerInput(appState, activeDigitIndex, invertHorizontal, invertVertical) {
                 var totalDragX = 0f
                 var totalDragY = 0f
 
@@ -117,23 +139,41 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                         totalDragY += dragAmount.y
                     },
                     onDragEnd = {
-                        val threshold = 40f
+                        if (appState == AppState.SETTINGS) return@detectDragGestures
+
+                        val threshold = 35f
                         val isHorizontal = abs(totalDragX) > abs(totalDragY)
 
                         if (isHorizontal) {
-                            if (totalDragX < -threshold) {
-                                // Left Swipe: Next digit or Ringing Dismiss
+                            val isLeft = totalDragX < -threshold
+                            val isRight = totalDragX > threshold
+
+                            if (isLeft || isRight) {
+                                // 左右スワイプで桁移動
+                                // 通常: 左スワイプで次の桁(Next)、右スワイプで前の桁(Prev)
+                                // 反転時: 右スワイプで次の桁(Next)、左スワイプで前の桁(Prev)
+                                val goNext = if (!invertHorizontal) isLeft else isRight
+
                                 if (appState == AppState.SETUP) {
-                                    if (activeDigitIndex < 3) {
-                                        activeDigitIndex++
-                                        playClickHaptic(false)
+                                    if (goNext) {
+                                        // 次の桁へ
+                                        if (activeDigitIndex < 3) {
+                                            activeDigitIndex++
+                                            playClickHaptic(false)
+                                        } else {
+                                            // 最後の桁で次へ ➔ 確定スタート
+                                            val totalSec = (digits[0] * 10 + digits[1]) * 60L + (digits[2] * 10 + digits[3])
+                                            if (totalSec > 0) {
+                                                remainingSeconds = totalSec
+                                                appState = AppState.RUNNING
+                                                playClickHaptic(true)
+                                            }
+                                        }
                                     } else {
-                                        // 4th digit left swipe: Start
-                                        val totalSec = (digits[0] * 10 + digits[1]) * 60L + (digits[2] * 10 + digits[3])
-                                        if (totalSec > 0) {
-                                            remainingSeconds = totalSec
-                                            appState = AppState.RUNNING
-                                            playClickHaptic(true)
+                                        // 前の桁へ
+                                        if (activeDigitIndex > 0) {
+                                            activeDigitIndex--
+                                            playClickHaptic(false)
                                         }
                                     }
                                 } else if (appState == AppState.RINGING) {
@@ -142,32 +182,39 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                                 }
                             }
                         } else {
-                            if (totalDragY < -threshold) {
-                                // Up Swipe: Quick start with remaining digits as 00
-                                if (appState == AppState.SETUP) {
-                                    val totalSec = (digits[0] * 10 + digits[1]) * 60L + (digits[2] * 10 + digits[3])
-                                    if (totalSec > 0) {
-                                        remainingSeconds = totalSec
-                                        appState = AppState.RUNNING
-                                        playClickHaptic(true)
+                            val isUp = totalDragY < -threshold
+                            val isDown = totalDragY > threshold
+
+                            if (isUp || isDown) {
+                                // 上下スワイプ
+                                // 通常: 上=確定(即スタート), 下=リセット
+                                // 反転時: 下=確定(即スタート), 上=リセット
+                                val isConfirm = if (!invertVertical) isUp else isDown
+
+                                if (isConfirm) {
+                                    // 確定操作 (上スワイプ)
+                                    if (appState == AppState.SETUP) {
+                                        val totalSec = (digits[0] * 10 + digits[1]) * 60L + (digits[2] * 10 + digits[3])
+                                        if (totalSec > 0) {
+                                            remainingSeconds = totalSec
+                                            appState = AppState.RUNNING
+                                            playClickHaptic(true)
+                                        }
                                     }
-                                }
-                            } else if (totalDragY > threshold) {
-                                // Down Swipe: Undo / Reset
-                                if (appState == AppState.SETUP) {
-                                    if (activeDigitIndex > 0) {
-                                        activeDigitIndex--
-                                        playClickHaptic(false)
-                                    } else {
-                                        // Reset to 00:00
+                                } else {
+                                    // リセット操作 (下スワイプ)
+                                    if (appState == AppState.SETUP) {
+                                        // 設定中は一発で全リセット 00:00
+                                        digits = intArrayOf(0, 0, 0, 0)
+                                        activeDigitIndex = 0
+                                        playClickHaptic(true)
+                                    } else if (appState == AppState.PAUSED) {
+                                        // 一時停止中のリセット
+                                        appState = AppState.SETUP
+                                        activeDigitIndex = 0
                                         digits = intArrayOf(0, 0, 0, 0)
                                         playClickHaptic(true)
                                     }
-                                } else if (appState == AppState.PAUSED) {
-                                    // Reset to setup
-                                    appState = AppState.SETUP
-                                    activeDigitIndex = 0
-                                    playClickHaptic(true)
                                 }
                             }
                         }
@@ -177,6 +224,8 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
             .pointerInput(appState, activeDigitIndex) {
                 detectTapGestures(
                     onTap = { offset: Offset ->
+                        if (appState == AppState.SETTINGS) return@detectTapGestures
+
                         val h = size.height
                         val isTopTwoThirds = offset.y < h * 0.67f
 
@@ -212,98 +261,208 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                                 appState = AppState.SETUP
                                 playClickHaptic(false)
                             }
+                            AppState.SETTINGS -> {}
                         }
                     },
                     onLongPress = {
-                        // Long press cycles color themes cleanly
-                        currentThemeIndex = (currentThemeIndex + 1) % AppTheme.values().size
-                        playClickHaptic(true)
+                        // 長押しで「設定画面」を開く
+                        if (appState == AppState.SETUP || appState == AppState.PAUSED) {
+                            appState = AppState.SETTINGS
+                            playClickHaptic(true)
+                        } else if (appState == AppState.SETTINGS) {
+                            appState = AppState.SETUP
+                            playClickHaptic(true)
+                        }
                     }
                 )
             }
     ) {
-        // Subtle Hairline at 2/3 (Setup Mode only)
-        if (appState == AppState.SETUP) {
-            Box(
+        if (appState == AppState.SETTINGS) {
+            // 設定画面（上下・左右の操作入れ替え ＆ テーマ切り替え）
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth(0.75f)
-                    .height(1.dp)
-                    .align(Alignment.TopCenter)
-                    .padding(top = 295.dp) // ~0.67 of 440dp screen
-                    .background(currentTheme.hairline)
-            )
-        }
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = "⚙️ 設定",
+                    color = currentTheme.activeFg,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(10.dp))
 
-        // Center Big Display
-        Row(
-            modifier = Modifier.align(Alignment.Center),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (appState == AppState.SETUP) {
-                // Digits with active highlighting
+                // 左右スワイプ切り替えボタン
+                val hLabel = if (!invertHorizontal) "左右: [左]次桁 / [右]前桁" else "左右: [右]次桁 / [左]前桁"
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(currentTheme.activeFg.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .clickable {
+                            invertHorizontal = !invertHorizontal
+                            saveSettings()
+                            playClickHaptic(false)
+                        }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = hLabel,
+                        color = currentTheme.activeFg,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 上下スワイプ切り替えボタン
+                val vLabel = if (!invertVertical) "上下: [上]確定 / [下]リセット" else "上下: [下]確定 / [上]リセット"
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(currentTheme.activeFg.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .clickable {
+                            invertVertical = !invertVertical
+                            saveSettings()
+                            playClickHaptic(false)
+                        }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = vLabel,
+                        color = currentTheme.activeFg,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // テーマ切り替え
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(currentTheme.activeFg.copy(alpha = 0.15f), RoundedCornerShape(8.dp))
+                        .clickable {
+                            currentThemeIndex = (currentThemeIndex + 1) % AppTheme.values().size
+                            saveSettings()
+                            playClickHaptic(false)
+                        }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "🎨 テーマ: ${currentTheme.title}",
+                        color = currentTheme.activeFg,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // 戻るボタン
                 Text(
-                    text = "${digits[0]}",
-                    color = if (activeDigitIndex == 0) currentTheme.activeFg else currentTheme.inactiveFg,
-                    fontSize = 58.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.SansSerif
-                )
-                Text(
-                    text = "${digits[1]}",
-                    color = if (activeDigitIndex == 1) currentTheme.activeFg else currentTheme.inactiveFg,
-                    fontSize = 58.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.SansSerif
-                )
-                Text(
-                    text = " : ",
+                    text = "長押し または タップで戻る",
                     color = currentTheme.inactiveFg,
-                    fontSize = 52.sp,
-                    fontWeight = FontWeight.Bold
+                    fontSize = 11.sp,
+                    modifier = Modifier.clickable {
+                        appState = AppState.SETUP
+                        playClickHaptic(false)
+                    }
                 )
-                Text(
-                    text = "${digits[2]}",
-                    color = if (activeDigitIndex == 2) currentTheme.activeFg else currentTheme.inactiveFg,
-                    fontSize = 58.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.SansSerif
+            }
+        } else {
+            // 通常のタイマー画面
+            // Subtle Hairline at 2/3 (Setup Mode only)
+            if (appState == AppState.SETUP) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(0.75f)
+                        .height(1.dp)
+                        .align(Alignment.TopCenter)
+                        .padding(top = 295.dp)
+                        .background(currentTheme.hairline)
                 )
-                Text(
-                    text = "${digits[3]}",
-                    color = if (activeDigitIndex == 3) currentTheme.activeFg else currentTheme.inactiveFg,
-                    fontSize = 58.sp,
-                    fontWeight = FontWeight.Bold,
-                    fontFamily = FontFamily.SansSerif
-                )
-            } else {
-                // Running / Paused / Ringing Mode
-                val m = (remainingSeconds / 60).toInt()
-                val s = (remainingSeconds % 60).toInt()
-                val mStr = String.format("%02d", m)
-                val sStr = String.format("%02d", s)
+            }
 
-                Text(
-                    text = mStr,
-                    color = if (appState == AppState.PAUSED) currentTheme.inactiveFg else currentTheme.activeFg,
-                    fontSize = 58.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = " : ",
-                    color = if (appState == AppState.RUNNING) {
-                        currentTheme.activeFg.copy(alpha = colonAlpha)
-                    } else {
-                        currentTheme.activeFg
-                    },
-                    fontSize = 52.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = sStr,
-                    color = if (appState == AppState.PAUSED) currentTheme.inactiveFg else currentTheme.activeFg,
-                    fontSize = 58.sp,
-                    fontWeight = FontWeight.Bold
-                )
+            // Center Big Display
+            Row(
+                modifier = Modifier.align(Alignment.Center),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (appState == AppState.SETUP) {
+                    // Digits with active highlighting
+                    Text(
+                        text = "${digits[0]}",
+                        color = if (activeDigitIndex == 0) currentTheme.activeFg else currentTheme.inactiveFg,
+                        fontSize = 58.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif
+                    )
+                    Text(
+                        text = "${digits[1]}",
+                        color = if (activeDigitIndex == 1) currentTheme.activeFg else currentTheme.inactiveFg,
+                        fontSize = 58.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif
+                    )
+                    Text(
+                        text = " : ",
+                        color = currentTheme.inactiveFg,
+                        fontSize = 52.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${digits[2]}",
+                        color = if (activeDigitIndex == 2) currentTheme.activeFg else currentTheme.inactiveFg,
+                        fontSize = 58.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif
+                    )
+                    Text(
+                        text = "${digits[3]}",
+                        color = if (activeDigitIndex == 3) currentTheme.activeFg else currentTheme.inactiveFg,
+                        fontSize = 58.sp,
+                        fontWeight = FontWeight.Bold,
+                        fontFamily = FontFamily.SansSerif
+                    )
+                } else {
+                    // Running / Paused / Ringing Mode
+                    val m = (remainingSeconds / 60).toInt()
+                    val s = (remainingSeconds % 60).toInt()
+                    val mStr = String.format("%02d", m)
+                    val sStr = String.format("%02d", s)
+
+                    Text(
+                        text = mStr,
+                        color = if (appState == AppState.PAUSED) currentTheme.inactiveFg else currentTheme.activeFg,
+                        fontSize = 58.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = " : ",
+                        color = if (appState == AppState.RUNNING) {
+                            currentTheme.activeFg.copy(alpha = colonAlpha)
+                        } else {
+                            currentTheme.activeFg
+                        },
+                        fontSize = 52.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = sStr,
+                        color = if (appState == AppState.PAUSED) currentTheme.inactiveFg else currentTheme.activeFg,
+                        fontSize = 58.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
