@@ -118,14 +118,19 @@ Geminiが返した `board_actions` に基づき、上層Canvas（ゴーストレ
 4. **本譜採用**: チャット欄の「▶ 変化図を本譜に採用」ボタンを押すと、いつでもその変化を実譜ツリーへ昇格可能。
 
 ### 4-4. モデル柔軟切り替え ＆ APIコスト保護設計
-- **モデル非依存（Future-Proof）**:
-  `.env` の1行書き換えで即座に新モデルへ切り替え可能。
-  ```bash
-  COACH_PROVIDER=gemini-api
-  COACH_MODEL=gemini-2.5-flash
-  # 来月新モデル登場時は書き換えるだけ:
-  # COACH_MODEL=gemini-3.5-flash
-  ```
+- **完全入れ子（カプセル化・抽象化）によるモデル変更の無痛化（禍根ゼロ設計）**:
+  特定のモデル名（`gemini-2.5-flash` など）をアプリ本体のコードに一切直書き（ハードコード）せず、多重の「入れ子構造（アダプター設計）」で完全に閉じ込めます。
+  1. **最外層（UI・対話画面）**: 「AIコーチと会話する」という共通窓口だけを見る（背後で何のモデルが動いているか意識しない）。
+  2. **中間層（CoachProvider 抽象インターフェース）**: Gemini API、agy CLI、将来の別モデル等の呼び出し差分をすべて吸収。
+  3. **最内層（Model Adapter ＆ 設定ファイル）**: 
+     ```bash
+     # .env にモデル設定を閉じ込め
+     COACH_PROVIDER=gemini-api
+     COACH_MODEL=gemini-2.5-flash
+     # 来月 3.5 が出た時は、この1行を変えるだけで外側の全プログラムは1文字も直さずに動く
+     # COACH_MODEL=gemini-3.5-flash
+     ```
+  これにより、将来どんな新モデルに乗り換えても、既存の盤面制御やチャットUIに一切影響（禍根）を与えません。
 - **多重フォールバック（Circuit Breaker）**:
   Gemini API ➔ 失敗時: Mac mini内 `agy CLI` ➔ 非常時: 定型ルールベース解説（`RuleBasedFallbackCoach`）。
 - **コスト・トークン安全設計**:
