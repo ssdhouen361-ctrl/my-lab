@@ -115,6 +115,7 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
             }
             if (remainingSeconds <= 0L && appState == AppState.RUNNING) {
                 appState = AppState.RINGING
+                OngoingTimerHelper.hideOngoingPill(context)
                 SoundAndVibeHelper.startAlarmSoundAndVibe(context)
             }
         }
@@ -166,6 +167,7 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                                             if (totalSec > 0) {
                                                 remainingSeconds = totalSec
                                                 appState = AppState.RUNNING
+                                                OngoingTimerHelper.showOngoingPill(context, totalSec)
                                                 playClickHaptic(true)
                                             }
                                         }
@@ -199,6 +201,7 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                                         if (totalSec > 0) {
                                             remainingSeconds = totalSec
                                             appState = AppState.RUNNING
+                                            OngoingTimerHelper.showOngoingPill(context, totalSec)
                                             playClickHaptic(true)
                                         }
                                     }
@@ -208,12 +211,14 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                                         // 設定中は一発で全リセット 00:00
                                         digits = intArrayOf(0, 0, 0, 0)
                                         activeDigitIndex = 0
+                                        OngoingTimerHelper.hideOngoingPill(context)
                                         playClickHaptic(true)
                                     } else if (appState == AppState.PAUSED) {
                                         // 一時停止中のリセット
                                         appState = AppState.SETUP
                                         activeDigitIndex = 0
                                         digits = intArrayOf(0, 0, 0, 0)
+                                        OngoingTimerHelper.hideOngoingPill(context)
                                         playClickHaptic(true)
                                     }
                                 }
@@ -252,15 +257,18 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                             }
                             AppState.RUNNING -> {
                                 appState = AppState.PAUSED
+                                OngoingTimerHelper.hideOngoingPill(context)
                                 playClickHaptic(false)
                             }
                             AppState.PAUSED -> {
                                 appState = AppState.RUNNING
+                                OngoingTimerHelper.showOngoingPill(context, remainingSeconds)
                                 playClickHaptic(false)
                             }
                             AppState.RINGING -> {
                                 appState = AppState.SETUP
                                 SoundAndVibeHelper.stopAlarmSoundAndVibe(context)
+                                OngoingTimerHelper.hideOngoingPill(context)
                                 playClickHaptic(false)
                             }
                             AppState.SETTINGS -> {}

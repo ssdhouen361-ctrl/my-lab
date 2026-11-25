@@ -56,4 +56,5 @@ dependencies {
     implementation("androidx.compose.animation:animation")
     implementation("androidx.wear.compose:compose-material:1.3.1")
     implementation("androidx.wear.compose:compose-foundation:1.3.1")
+    implementation("androidx.wear.ongoing:ongoing-activity:1.0.0")
 }
