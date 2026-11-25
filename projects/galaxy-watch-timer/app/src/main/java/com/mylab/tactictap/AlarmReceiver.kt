@@ -12,8 +12,7 @@ import android.os.VibratorManager
 
 class AlarmReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        // Trigger high-intensity wake-up vibration pattern
-        triggerAlarmHaptics(context)
+        SoundAndVibeHelper.startAlarmSoundAndVibe(context)
     }
 
     private fun triggerAlarmHaptics(context: Context) {

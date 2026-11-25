@@ -115,7 +115,7 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
             }
             if (remainingSeconds <= 0L && appState == AppState.RUNNING) {
                 appState = AppState.RINGING
-                playClickHaptic(isDouble = true)
+                SoundAndVibeHelper.startAlarmSoundAndVibe(context)
             }
         }
     }
@@ -178,6 +178,7 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                                     }
                                 } else if (appState == AppState.RINGING) {
                                     appState = AppState.SETUP
+                                    SoundAndVibeHelper.stopAlarmSoundAndVibe(context)
                                     playClickHaptic(false)
                                 }
                             }
@@ -259,6 +260,7 @@ fun TacTicTapApp(initialAlarmMode: Boolean) {
                             }
                             AppState.RINGING -> {
                                 appState = AppState.SETUP
+                                SoundAndVibeHelper.stopAlarmSoundAndVibe(context)
                                 playClickHaptic(false)
                             }
                             AppState.SETTINGS -> {}
