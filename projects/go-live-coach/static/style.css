@@ -260,6 +260,30 @@ body, html {
   gap: 8px;
 }
 
+#mic-btn {
+  padding: 8px 14px;
+  background-color: #1e3a5f;
+  border: 1px solid #3b82f6;
+  color: #93c5fd;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#mic-btn.recording {
+  background-color: #dc2626;
+  border-color: #ef4444;
+  color: #ffffff;
+  animation: pulse-red 1s infinite alternate;
+}
+
+@keyframes pulse-red {
+  from { box-shadow: 0 0 4px #dc2626; }
+  to { box-shadow: 0 0 14px #ef4444; }
+}
+
 #speech-input {
   flex: 1;
   background-color: #0f172a;

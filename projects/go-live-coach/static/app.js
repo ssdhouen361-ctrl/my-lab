@@ -20,8 +20,79 @@ class GoLiveCoachApp {
     this.gameState = null;
     this.ghostVariations = []; // [{coord: "Q16", step: 1, color: "W"}]
     this.highlightArea = [12, 18, 12, 18]; // Default upper right 6x6
+    this.recognition = null;
+    this.isRecording = false;
 
     this.init();
+    this.initSpeechRecognition();
+  }
+
+  initSpeechRecognition() {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.warn("Web Speech API is not supported in this browser.");
+      return;
+    }
+    this.recognition = new SpeechRecognition();
+    this.recognition.lang = "ja-JP";
+    this.recognition.continuous = false;
+    this.recognition.interimResults = true;
+
+    this.recognition.onstart = () => {
+      this.isRecording = true;
+      const btn = document.getElementById("mic-btn");
+      if (btn) {
+        btn.classList.add("recording");
+        btn.innerText = "🛑 聴取中...";
+      }
+    };
+
+    this.recognition.onresult = (event) => {
+      let transcript = "";
+      for (let i = event.resultIndex; i < event.results.length; ++i) {
+        transcript += event.results[i][0].transcript;
+      }
+      const input = document.getElementById("speech-input");
+      if (input) input.value = transcript;
+    };
+
+    this.recognition.onerror = (event) => {
+      console.error("Speech recognition error", event.error);
+      this.stopRecording();
+    };
+
+    this.recognition.onend = () => {
+      this.stopRecording();
+      const input = document.getElementById("speech-input");
+      if (input && input.value.trim()) {
+        this.sendSpeech(input.value.trim());
+      }
+    };
+  }
+
+  toggleRecording() {
+    if (!this.recognition) {
+      alert("お使いのブラウザは音声認識に対応していません。ChromeまたはSafariの最新版をご利用ください。");
+      return;
+    }
+    if (this.isRecording) {
+      this.recognition.stop();
+    } else {
+      try {
+        this.recognition.start();
+      } catch (e) {
+        console.error("Failed to start speech recognition", e);
+      }
+    }
+  }
+
+  stopRecording() {
+    this.isRecording = false;
+    const btn = document.getElementById("mic-btn");
+    if (btn) {
+      btn.classList.remove("recording");
+      btn.innerText = "🎤 話す";
+    }
   }
 
   async init() {
@@ -313,6 +384,11 @@ class GoLiveCoachApp {
     document.getElementById("nav-next1").addEventListener("click", () => this.navigate("next1"));
     document.getElementById("nav-next10").addEventListener("click", () => this.navigate("next10"));
     document.getElementById("nav-last").addEventListener("click", () => this.navigate("last"));
+
+    const micBtn = document.getElementById("mic-btn");
+    if (micBtn) {
+      micBtn.addEventListener("click", () => this.toggleRecording());
+    }
 
     document.getElementById("send-speech-btn").addEventListener("click", () => {
       const val = document.getElementById("speech-input").value;
