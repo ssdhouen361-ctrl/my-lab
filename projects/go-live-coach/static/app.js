@@ -483,11 +483,16 @@ class GoLiveCoachApp {
     }
 
     // Board Click-to-Play Event (盤面クリックで着手＆分岐作成)
-    this.ghostCanvas.addEventListener("click", async (e) => {
+    const handleBoardClick = async (e) => {
       const rect = this.ghostCanvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+      const clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : null);
+      const clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : null);
+      if (clientX === null || clientY === null) return;
 
+      const x = clientX - rect.left;
+      const y = clientY - rect.top;
+
+      // クリック位置から最も近い交点を高精度に算出
       const col = Math.round((x - this.gridPadding) / this.cellSize);
       const row = 18 - Math.round((y - this.gridPadding) / this.cellSize);
 
@@ -509,7 +514,9 @@ class GoLiveCoachApp {
           console.error("着手通信エラー", err);
         }
       }
-    });
+    };
+
+    this.ghostCanvas.addEventListener("pointerdown", handleBoardClick);
 
     document.getElementById("send-speech-btn").addEventListener("click", () => {
       const val = document.getElementById("speech-input").value;
