@@ -1,0 +1,148 @@
+"""FastAPI Application Factory for Go Live Coach."""
+from __future__ import annotations
+import uuid
+from typing import Dict, Any, List
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
+
+from app.config import settings
+from app.rules import BoardState, TreeNode, point_to_gtp, gtp_to_point
+from app.slicer import LocalAreaSlicer
+from app.adapter import get_coach_adapter
+from app.schemas.dialogue import DialogueRequest, CoachDialogueResponse
+
+app = FastAPI(title="Go Live Coach", version="0.1.0")
+
+origins = [o.strip() for o in settings.ALLOWED_ORIGINS.split(",") if o.strip()]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins or ["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# In-memory Tree / Game Session State
+class SessionState:
+    def __init__(self):
+        root = TreeNode(node_id="root", board_state=BoardState())
+        self.nodes: Dict[str, TreeNode] = {"root": root}
+        self.current_node_id: str = "root"
+        self.move_history: List[str] = ["root"]
+        self.ownership_mock: List[float] = [0.0] * 361
+
+        # Populate a sample 34-move game state for immediate testing
+        self._setup_sample_game()
+
+    def _setup_sample_game(self):
+        # Setup standard opening moves: Q16, D4, Q4, D16, etc.
+        sample_moves = [
+            ("Q16", "B"), ("D4", "W"), ("Q4", "B"), ("D16", "W"),
+            ("R14", "B"), ("O17", "W"), ("C6", "B"), ("F3", "W"),
+            ("K3", "B"), ("C10", "W"), ("C14", "B"), ("E17", "W")
+        ]
+        curr = "root"
+        for gtp, col in sample_moves:
+            pt = gtp_to_point(gtp)
+            new_state = self.nodes[curr].board_state.copy()
+            new_state.play_move(pt, col)
+            nid = str(uuid.uuid4())[:8]
+            node = TreeNode(node_id=nid, parent_id=curr, move=pt, color=col, board_state=new_state)
+            self.nodes[curr].children.append(nid)
+            self.nodes[nid] = node
+            curr = nid
+            self.move_history.append(nid)
+        self.current_node_id = curr
+
+        # Sample ownership in upper right (black slight advantage)
+        for r in range(12, 19):
+            for c in range(12, 19):
+                idx = (18 - r) * 19 + c
+                self.ownership_mock[idx] = 0.85
+
+session = SessionState()
+
+@app.get("/api/v1/state")
+def get_state():
+    node = session.nodes[session.current_node_id]
+    grid_dict = {point_to_gtp(pt): col for pt, col in node.board_state.grid.items()}
+    move_idx = session.move_history.index(session.current_node_id) if session.current_node_id in session.move_history else len(session.move_history)
+    return {
+        "current_node_id": session.current_node_id,
+        "move_count": move_idx,
+        "turn": 'W' if node.color == 'B' else 'B',
+        "stones": grid_dict,
+        "captures": {
+            "black": node.board_state.captures_black,
+            "white": node.board_state.captures_white
+        }
+    }
+
+@app.post("/api/v1/navigate")
+def navigate_move(action: str):
+    """Action: 'first', 'prev10', 'prev1', 'next1', 'next10', 'last'"""
+    try:
+        curr_idx = session.move_history.index(session.current_node_id)
+    except ValueError:
+        curr_idx = len(session.move_history) - 1
+
+    if action == "first":
+        target_idx = 0
+    elif action == "prev10":
+        target_idx = max(0, curr_idx - 10)
+    elif action == "prev1":
+        target_idx = max(0, curr_idx - 1)
+    elif action == "next1":
+        target_idx = min(len(session.move_history) - 1, curr_idx + 1)
+    elif action == "next10":
+        target_idx = min(len(session.move_history) - 1, curr_idx + 10)
+    elif action == "last":
+        target_idx = len(session.move_history) - 1
+    else:
+        raise HTTPException(status_code=400, detail="Invalid navigation action")
+
+    session.current_node_id = session.move_history[target_idx]
+    return get_state()
+
+@app.post("/api/v1/slice-area")
+def slice_local_area(bbox: List[int]):
+    """bbox: [col_min, col_max, row_min, row_max]"""
+    if len(bbox) != 4:
+        raise HTTPException(status_code=400, detail="Bounding box must be 4 elements")
+    res = LocalAreaSlicer.slice_ownership(
+        session.ownership_mock,
+        col_min=bbox[0], col_max=bbox[1],
+        row_min=bbox[2], row_max=bbox[3]
+    )
+    summary = LocalAreaSlicer.format_summary("選択エリア", res)
+    return {"slice": res, "summary_text": summary}
+
+@app.post("/api/v1/dialogue/chat", response_model=CoachDialogueResponse)
+async def chat_with_coach(req: DialogueRequest):
+    adapter = get_coach_adapter()
+
+    # Calculate area evaluation if requested
+    area_summary = "局所的に互角"
+    if req.selected_area and len(req.selected_area) == 4:
+        res = LocalAreaSlicer.slice_ownership(
+            session.ownership_mock,
+            col_min=req.selected_area[0], col_max=req.selected_area[1],
+            row_min=req.selected_area[2], row_max=req.selected_area[3]
+        )
+        area_summary = LocalAreaSlicer.format_summary("右上", res)
+
+    context = {
+        "move_count": req.move_count,
+        "current_node_id": req.current_node_id,
+        "area_summary": area_summary
+    }
+
+    resp = await adapter.chat(user_speech=req.user_speech_raw, context=context)
+    return resp
+
+# Static files mount
+static_dir = Path(__file__).parent.parent / "static"
+if static_dir.exists():
+    app.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")

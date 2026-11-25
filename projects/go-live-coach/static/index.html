@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=overlays-content">
+  <title>Go Live Coach — Galaxy Tab S11</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app-container">
+    <!-- Left Pane: Full Height Goban Area -->
+    <div id="board-pane">
+      <div id="canvas-wrapper">
+        <canvas id="base-canvas"></canvas>
+        <canvas id="ghost-canvas"></canvas>
+      </div>
+    </div>
+
+    <!-- Right Pane: Header, Dialogue, Summary & Bottom Navigation -->
+    <div id="info-pane">
+      <!-- Section 1: Header Status Bar (Compact 44px) -->
+      <div id="status-header">
+        <div class="status-indicator">
+          <span class="status-dot green"></span>
+          <span class="status-label">KataGo M6 GPU: 接続中</span>
+        </div>
+        <div class="header-actions">
+          <button id="voice-toggle-btn" class="active">● 音声対話 ON</button>
+          <button id="settings-btn" title="設定">⚙ 設定</button>
+        </div>
+      </div>
+
+      <!-- Section 2: Dialogue & AI Review Main Area -->
+      <div id="chat-container">
+        <div id="chat-history">
+          <!-- Messages dynamically injected -->
+        </div>
+      </div>
+
+      <!-- Section 3: Summary Bar (1-line) -->
+      <div id="summary-bar">
+        <span id="winrate-text">全盤勝率: 黒 58.2% (+1.5目)</span>
+        <span class="summary-sep">|</span>
+        <span id="local-area-text">右上評価: 局所的に互角 (黒 +0.5目)</span>
+      </div>
+
+      <!-- Section 4: Bottom Navigation (添付画像の青ペン配置に完全一致) -->
+      <div id="bottom-nav">
+        <div class="nav-btn-group">
+          <button id="nav-first" class="nav-btn" title="最初">|&lt;</button>
+          <button id="nav-prev10" class="nav-btn" title="10手戻る">&lt;&lt;</button>
+          <button id="nav-prev1" class="nav-btn" title="1手戻る">&lt;</button>
+        </div>
+        
+        <div id="move-counter-box">
+          <div id="move-number-display">12手目</div>
+          <div id="move-turn-display">（白番 / 本譜）</div>
+        </div>
+
+        <div class="nav-btn-group">
+          <button id="nav-next1" class="nav-btn" title="1手進む">&gt;</button>
+          <button id="nav-next10" class="nav-btn" title="10手進む">&gt;&gt;</button>
+          <button id="nav-last" class="nav-btn" title="最新">&gt;|</button>
+        </div>
+      </div>
+
+      <!-- Speech / Message Quick Input Bar -->
+      <div id="input-bar">
+        <input type="text" id="speech-input" placeholder="質問を入力（例: ノビて受けたらどうでしたか？）..." />
+        <button id="send-speech-btn">送信</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Drawer / Modal -->
+  <div id="settings-drawer" class="hidden">
+    <div class="drawer-content">
+      <div class="drawer-header">
+        <h3>⚙ 設定・API利用状況</h3>
+        <button id="close-settings-btn">✕</button>
+      </div>
+      <div class="drawer-body">
+        <div class="setting-item">
+          <label>現在のAIモデル（設定中）:</label>
+          <div class="badge">gemini-2.5-flash (来月3.5へ1行移行対応)</div>
+        </div>
+        <div class="setting-item">
+          <label>本日のAPI利用目安:</label>
+          <div class="metric">約 12 回呼び出し（推定: 約 1.4 円）</div>
+        </div>
+        <div class="setting-item">
+          <label>音声入力方式:</label>
+          <select id="voice-mode-select">
+            <option value="vad">ハンズフリー自動認識 (VAD)</option>
+            <option value="ptt">ボタン長押し中のみ集音 (Push-to-Talk)</option>
+            <option value="text">テキスト入力のみ</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

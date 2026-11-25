@@ -7,16 +7,18 @@
 ## 構想・計画中プロジェクト: 対話型囲碁検討AI「Go Live Coach」(仮称)
 
 - **プロジェクトディレクトリ:** `projects/go-live-coach/` (新規立ち上げ予定)
-- **ステータス:** **基本設計書（docs/go-live-coach-design.md）完成・統括審査承認済み ➔ Phase 2（バックエンド基盤構築）準備完了**
+- **ステータス:** **プロトタイプ（Phase 2/3）実装完了・自動テスト全件合格（6/6 passed）**
 - **最終更新:** 2026-11-26
 - **主要決定事項・成果物:**
-  1. **統合設計書:** [docs/go-live-coach-design.md](../docs/go-live-coach-design.md) を作成・承認済み。
-  2. **配置ワイヤーフレーム:** [docs/mockups/tablet_layout_wireframe.png](../docs/mockups/tablet_layout_wireframe.png)
-  3. **事前検討会でのリスク対策合意:**
-     - **KataGo部分ワカレ評価**: 全盤解析の `ownership`（361点配列）から選択矩形領域をスライス集計する安全・高精度方式を採用。
-     - **発話スマート要約**: `Single-Pass 構造化出力`（要約と解説を1回のリクエストで同時生成）によりレイテンシ増加を完全にゼロ化。
-     - **Galaxy Tab S11 UI**: 2層Canvas（確定石とゴースト石の完全分離）、Android仮想キーボード出現時も盤面サイズを縮小させないレイアウト保護。
-     - **モデル柔軟性 & コスト安全**: 多重入れ子（アダプター構造）でカプセル化し、モデル変更時の禍根をゼロ化。`.env` で `gemini-2.5-flash` から来月の `3.5-flash` へ1行切替可能。設定画面（歯車）内にAPI利用目安・トークン消費量を控えめに表示。
+  1. **プロジェクト本体:** [projects/go-live-coach/](../projects/go-live-coach/)
+     - `app/main.py`: FastAPI Web/REST サーバー（ポート `8095`）
+     - `app/rules.py`: 19路盤ルール・着手判定・ツリー管理
+     - `app/slicer.py`: KataGo 361マス ownership からの局所地合い・厚み集計スライサー
+     - `app/adapter.py`: 多重入れ子構造によるモデル切り替えアダプター（`.env` で `gemini-2.5-flash` や `3.5-flash` へ1行切替可能）
+     - `static/index.html` / `style.css` / `app.js`: Galaxy Tab S11横画面特化の2層Canvas盤面＋手番ナビ（下部）＋Gemini対話UI
+  2. **自動テスト:** [projects/go-live-coach/tests/test_coach_engine.py](../projects/go-live-coach/tests/test_coach_engine.py) にて、盤面ルール・アゲハマ・部分ワカレ計算・スマート発話要約・APIナビゲーションを検証し、**全件 PASS（6/6 passed）** を確認。
+  3. **統合設計書:** [docs/go-live-coach-design.md](../docs/go-live-coach-design.md) を作成・承認済み。
+  4. **配置ワイヤーフレーム:** [docs/mockups/tablet_layout_wireframe.png](../docs/mockups/tablet_layout_wireframe.png)
 
 ---
 
