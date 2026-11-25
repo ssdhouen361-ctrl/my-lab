@@ -19,7 +19,8 @@ class GoLiveCoachApp {
 
     this.gameState = null;
     this.ghostVariations = []; // [{coord: "Q16", step: 1, color: "W"}]
-    this.highlightArea = [12, 18, 12, 18]; // Default upper right 6x6
+    this.highlightArea = null; // デフォルトは全盤表示（固定の青枠を完全撤廃）
+    this.voiceMode = "ptt"; // "ptt" (押してる間のみ) または "continuous" (常に集音)
     this.recognition = null;
     this.isRecording = false;
 
@@ -104,8 +105,7 @@ class GoLiveCoachApp {
 
     // Initial greeting
     this.appendAiMessage(
-      "白34手目の検討ですね。上辺の競り合いでハネ出すか、ノビて手堅く受けるかが焦点です。「ノビたらどうでしたか？」など、お気軽にお話しください。",
-      "白34手目の検討について"
+      "白12手目の検討局面です。右上の定石や全体の布石方針など、気になる部分があればいつでもお話しください。「右上のワカレはどう？」「ノビてたらどうだった？」など、自由に対話できます。"
     );
   }
 
@@ -353,7 +353,7 @@ class GoLiveCoachApp {
   updateUserBalloon(id, cleanSummary) {
     const el = document.getElementById(id);
     if (!el) return;
-    el.innerHTML = `<div class="card-title">あなた</div><div class="card-text">「${this.escape(cleanSummary)}」</div>`;
+    el.innerHTML = `<div class="card-title">あなた</div><div class="card-text">${this.escape(cleanSummary)}</div>`;
   }
 
   appendAiMessage(replyText, summaryTitle, actions) {
@@ -385,9 +385,52 @@ class GoLiveCoachApp {
     document.getElementById("nav-next10").addEventListener("click", () => this.navigate("next10"));
     document.getElementById("nav-last").addEventListener("click", () => this.navigate("last"));
 
+    // Mic mode switch (PTT vs Continuous)
+    const modeBtn = document.getElementById("mic-mode-btn");
+    if (modeBtn) {
+      modeBtn.addEventListener("click", () => {
+        if (this.voiceMode === "ptt") {
+          this.voiceMode = "continuous";
+          modeBtn.innerText = "常時集音中";
+          modeBtn.classList.add("active-vad");
+        } else {
+          this.voiceMode = "ptt";
+          modeBtn.innerText = "押してる間のみ";
+          modeBtn.classList.remove("active-vad");
+        }
+      });
+    }
+
     const micBtn = document.getElementById("mic-btn");
     if (micBtn) {
-      micBtn.addEventListener("click", () => this.toggleRecording());
+      // Click for toggle, or hold for PTT
+      micBtn.addEventListener("mousedown", () => {
+        if (this.voiceMode === "ptt" && !this.isRecording) {
+          this.toggleRecording();
+        }
+      });
+      micBtn.addEventListener("mouseup", () => {
+        if (this.voiceMode === "ptt" && this.isRecording) {
+          this.toggleRecording();
+        }
+      });
+      micBtn.addEventListener("touchstart", (e) => {
+        e.preventDefault();
+        if (this.voiceMode === "ptt" && !this.isRecording) {
+          this.toggleRecording();
+        }
+      });
+      micBtn.addEventListener("touchend", (e) => {
+        e.preventDefault();
+        if (this.voiceMode === "ptt" && this.isRecording) {
+          this.toggleRecording();
+        }
+      });
+      micBtn.addEventListener("click", () => {
+        if (this.voiceMode === "continuous") {
+          this.toggleRecording();
+        }
+      });
     }
 
     document.getElementById("send-speech-btn").addEventListener("click", () => {

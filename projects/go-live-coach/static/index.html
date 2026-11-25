@@ -39,9 +39,9 @@
 
       <!-- Section 3: Summary Bar (1-line) -->
       <div id="summary-bar">
-        <span id="winrate-text">全盤勝率: 黒 58.2% (+1.5目)</span>
+        <span id="winrate-text">全盤評価: 黒 58.2% (+1.5目)</span>
         <span class="summary-sep">|</span>
-        <span id="local-area-text">右上評価: 局所的に互角 (黒 +0.5目)</span>
+        <span id="local-area-text">部分検討: 全盤表示中（会話やドラッグでいつでも指定可能）</span>
       </div>
 
       <!-- Section 4: Bottom Navigation (添付画像の青ペン配置に完全一致) -->
@@ -66,8 +66,9 @@
 
       <!-- Speech / Message Quick Input Bar -->
       <div id="input-bar">
+        <button id="mic-mode-btn" class="toggle-btn" title="集音方式切替">押してる間のみ</button>
         <button id="mic-btn" title="マイクで話す">🎤 話す</button>
-        <input type="text" id="speech-input" placeholder="マイクを押して話すか、文字を入力..." />
+        <input type="text" id="speech-input" placeholder="話しかけるか、文字を入力（例: 右上の定石のワカレはどう？）..." />
         <button id="send-speech-btn">送信</button>
       </div>
     </div>

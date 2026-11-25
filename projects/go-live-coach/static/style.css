@@ -260,6 +260,23 @@ body, html {
   gap: 8px;
 }
 
+#mic-mode-btn {
+  padding: 8px 10px;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  color: #94a3b8;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#mic-mode-btn.active-vad {
+  background-color: #0f3d2e;
+  border-color: #10b981;
+  color: #6ee7b7;
+}
+
 #mic-btn {
   padding: 8px 14px;
   background-color: #1e3a5f;

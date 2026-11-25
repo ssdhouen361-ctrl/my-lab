@@ -23,20 +23,27 @@ class RuleFallbackAdapter:
     """Zero-dependency deterministic adapter for offline and testing."""
 
     async def chat(self, user_speech: str, context: Dict[str, Any]) -> CoachDialogueResponse:
-        # 1. Clean speech (Smart summarization simulation)
-        cleaned = re.sub(r'^(あー|えーっと|うーん|いや|その|ええと)+[\s、,]*', '', user_speech.strip())
+        # 1. Clean speech (Smart natural summarization)
+        cleaned = re.sub(r'^(あー|えーっと|うーん|いや|その|ええと|ま|あの)+[\s、,・…]*', '', user_speech.strip())
         if not cleaned:
             cleaned = "次の一手の方針について"
-        summary = f"{cleaned}"
-        if not summary.endswith(("？", "?", "か")):
-            summary += "について"
 
-        move_cnt = context.get("move_count", 34)
-        area_info = context.get("area_summary", "局所的に互角")
+        # 自然な質問文の整形（不自然な「について」の機械的付与を廃止）
+        if cleaned.endswith(("について", "に関して")):
+            summary = cleaned
+        elif cleaned.endswith(("？", "?", "か", "でしょうか", "どうですか", "どうでしたか", "どう")):
+            summary = cleaned
+        else:
+            summary = f"{cleaned}はどうですか？"
 
+        move_cnt = context.get("move_count", 12)
+        area_info = context.get("area_summary", "")
+
+        # 自然な日本語のコーチ返答
+        area_part = f" なお、{area_info}となっています。" if area_info else ""
         reply = (
-            f"{move_cnt}手目の検討ですね。{summary}。この局面では周囲の厚みと隅の実利のバランスが鍵です。"
-            f"{area_info}となっています。"
+            f"実戦の{move_cnt}手目で「{cleaned}」という変化ですね。"
+            f"この手を選ぶと、相手に先手を許す代わりに地合いを堅くまとめることができます。{area_part}"
         )
 
         actions = [
