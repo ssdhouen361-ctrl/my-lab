@@ -310,6 +310,12 @@ class GoLiveCoachApp {
     document.getElementById("move-number-display").innerText = `${this.gameState.move_count}手目`;
     const turnStr = this.gameState.turn === "B" ? "黒番" : "白番";
     document.getElementById("move-turn-display").innerText = `（${turnStr} / 本譜）`;
+
+    // 評価値のリアルタイム連動更新
+    if (this.gameState.evaluation && this.gameState.evaluation.display_text) {
+      const evalEl = document.getElementById("winrate-text");
+      if (evalEl) evalEl.innerText = this.gameState.evaluation.display_text;
+    }
   }
 
   async navigate(action) {

@@ -11,6 +11,27 @@ from app.rules import Point, point_to_gtp
 class LocalAreaSlicer:
     """Extracts local territory (ownership sum) and thickness from full-board analysis."""
 
+    # 盤面の主要エリア定義（定石や隅の攻防を自然言語から自動判別）
+    AREAS: Dict[str, Tuple[int, int, int, int]] = {
+        "右上": (10, 18, 10, 18),
+        "左上": (0, 8, 10, 18),
+        "右下": (10, 18, 0, 8),
+        "左下": (0, 8, 0, 8),
+        "上辺": (6, 12, 13, 18),
+        "下辺": (6, 12, 0, 5),
+        "左辺": (0, 5, 6, 12),
+        "右辺": (13, 18, 6, 12),
+        "中央": (6, 12, 6, 12)
+    }
+
+    @classmethod
+    def detect_area_from_text(cls, text: str) -> Optional[Tuple[str, Tuple[int, int, int, int]]]:
+        """発話内容から『右上』『左下』などのエリアを自動検出し、手動指定なしで部分評価"""
+        for name, bbox in cls.AREAS.items():
+            if name in text:
+                return name, bbox
+        return None
+
     @staticmethod
     def slice_ownership(
         ownership: List[float], # 361 elements (-1.0 White to +1.0 Black)
