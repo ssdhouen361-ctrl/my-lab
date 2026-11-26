@@ -11,8 +11,9 @@ Galaxy Tab S11（横画面 16:10）に最適化された、リアルタイム音
 ## 1. 起動方法（Mac mini ターミナルで 1 行実行）
 
 ```bash
-cd ~/my-lab/projects/go-live-coach && PYTHONPATH=. ../web-goban/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8095
+cd ~/my-lab/projects/go-live-coach && PYTHONPATH=. ../web-goban/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8095 --reload
 ```
+※ `--reload` を付けて起動することで、Pythonコードを更新した際に自動で最新状態が反映されます。
 
 ブラウザで `http://127.0.0.1:8095/` を開くと、Galaxy Tab S11向け2層Canvas盤面と対話UIが立ち上がります。
 
