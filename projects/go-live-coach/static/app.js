@@ -512,7 +512,7 @@ class GoLiveCoachApp {
             this.renderGhost();
           } else {
             const err = await res.json();
-            alert(`着手できません: ${err.detail}`);
+            console.warn("着手不可:", err.detail);
           }
         } catch (err) {
           console.error("着手通信エラー", err);
@@ -520,12 +520,15 @@ class GoLiveCoachApp {
       }
     };
 
-    // ghostCanvas と wrapper の両方にイベントを登録し、取りこぼしを完全防止
+    // 碁盤へのイベント登録（pointerdown, click, touchend を wrapper/canvas 両方に設定）
+    this.ghostCanvas.addEventListener("pointerdown", handleBoardClick);
     this.ghostCanvas.addEventListener("click", handleBoardClick);
     this.ghostCanvas.addEventListener("touchend", handleBoardClick);
     const wrapper = document.getElementById("canvas-wrapper");
     if (wrapper) {
+      wrapper.addEventListener("pointerdown", handleBoardClick);
       wrapper.addEventListener("click", handleBoardClick);
+      wrapper.addEventListener("touchend", handleBoardClick);
     }
 
     document.getElementById("send-speech-btn").addEventListener("click", () => {
